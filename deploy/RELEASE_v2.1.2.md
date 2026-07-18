@@ -23,12 +23,12 @@
 
 ## Деплой
 
-GitHub Actions → [deploy](https://github.com/qa-guru/selenoid.autotests.cloud/actions/workflows/deploy.yml):
+GitHub Actions → [deploy](https://github.com/qa-guru/selenoid.qa.guru/actions/workflows/deploy.yml):
 
 - **version:** `v2.1.1` (hub/cm) или пусто — default в `deploy.sh`
 - **UI:** `SELENOID_UI_VERSION=v2.1.2` (default в `deploy.sh`)
 
 ```bash
 SELENOID_VERSION=v2.1.1 SELENOID_UI_VERSION=v2.1.2 ./deploy/deploy.sh
-./deploy/smoke-remote.sh https://selenoid.autotests.cloud
+./deploy/smoke-remote.sh https://selenoid.qa.guru
 ```

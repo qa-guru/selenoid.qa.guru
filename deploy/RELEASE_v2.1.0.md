@@ -2,7 +2,7 @@
 
 | Компонент | Release | Статус |
 |-----------|---------|--------|
-| **Deploy** | [v2.1.0](https://github.com/qa-guru/selenoid.autotests.cloud/releases/tag/v2.1.0) | prod-деплой |
+| **Deploy** | [v2.1.0](https://github.com/qa-guru/selenoid.qa.guru/releases/tag/v2.1.0) | prod-деплой |
 | **cm** | [v2.1.0](https://github.com/qa-guru/cm/releases/tag/v2.1.0) | установщик |
 | Selenoid hub | [v2.1.0](https://github.com/qa-guru/selenoid/releases/tag/v2.1.0) | hub |
 | Selenoid UI | [v2.1.0](https://github.com/qa-guru/selenoid-ui/releases/tag/v2.1.0) | UI |
@@ -18,16 +18,16 @@
 
 | Изменение | Описание |
 |-----------|----------|
-| **selenoid.autotests.cloud** | Скрипты деплоя, nginx, CI (`deploy.yml`), release notes стека |
+| **selenoid.qa.guru** | Скрипты деплоя, nginx, CI (`deploy.yml`), release notes стека |
 | **cm** | Только сборка, релиз и Docker-образ — без prod-деплоя |
-| **GitHub Actions** | Prod-деплой: Actions → [deploy](https://github.com/qa-guru/selenoid.autotests.cloud/actions/workflows/deploy.yml) |
+| **GitHub Actions** | Prod-деплой: Actions → [deploy](https://github.com/qa-guru/selenoid.qa.guru/actions/workflows/deploy.yml) |
 | **Код hub/UI/cm** | Без изменений относительно v2.0.9 — выравнивание версии стека |
 
 ---
 
 ## Деплой
 
-GitHub Actions в [qa-guru/selenoid.autotests.cloud](https://github.com/qa-guru/selenoid.autotests.cloud):
+GitHub Actions в [qa-guru/selenoid.qa.guru](https://github.com/qa-guru/selenoid.qa.guru):
 
 - **ref:** `v2.1.0`
 - **version:** `v2.1.0` (или пусто — default в `deploy.sh`)
@@ -41,7 +41,7 @@ SELENOID_VERSION=v2.1.0 SELENOID_UI_VERSION=v2.1.0 ./deploy/deploy.sh
 Проверка:
 
 ```bash
-./deploy/smoke-remote.sh https://selenoid.autotests.cloud
+./deploy/smoke-remote.sh https://selenoid.qa.guru
 ```
 
 ---
@@ -50,9 +50,9 @@ SELENOID_VERSION=v2.1.0 SELENOID_UI_VERSION=v2.1.0 ./deploy/deploy.sh
 
 | Протокол | URL |
 |----------|-----|
-| Selenium | `https://selenoid.autotests.cloud/wd/hub` |
-| Playwright | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1` |
-| UI | `https://selenoid.autotests.cloud/` |
-| Status | `https://selenoid.autotests.cloud/status` |
+| Selenium | `https://selenoid.qa.guru/wd/hub` |
+| Playwright | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1` |
+| UI | `https://selenoid.qa.guru/` |
+| Status | `https://selenoid.qa.guru/status` |
 
 WebDriver Edge: `browserName: msedge` или `MicrosoftEdge`, `browserVersion: 145.0`.

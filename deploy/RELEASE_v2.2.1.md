@@ -1,4 +1,4 @@
-# Release v2.2.1 — prod selenoid.autotests.cloud
+# Release v2.2.1 — prod selenoid.qa.guru
 
 **Дата:** 10 июля 2026  
 **Предыдущий:** [v2.2.0](RELEASE_v2.2.0.md) (WebDriver chrome catalog)  
@@ -30,6 +30,6 @@ Runtime/catalog без изменений относительно v2.2.0 pin.
 SELENOID_VERSION=v2.2.1 SELENOID_UI_VERSION=v2.2.1 CM_VERSION=v2.2.1 ./deploy/deploy.sh
 ```
 
-Smoke: `./deploy/smoke-remote.sh https://selenoid.autotests.cloud`
+Smoke: `./deploy/smoke-remote.sh https://selenoid.qa.guru`
 
 Связанные: [selenoid v2.2.1](https://github.com/qa-guru/selenoid/releases/tag/v2.2.1), [selenoid-ui v2.2.1](https://github.com/qa-guru/selenoid-ui/releases/tag/v2.2.1), [cm v2.2.1](https://github.com/qa-guru/cm/releases/tag/v2.2.1).

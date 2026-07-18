@@ -1,12 +1,12 @@
-# Деплой на selenoid.autotests.cloud
+# Деплой на selenoid.qa.guru
 
 Публичный Selenoid для курсов и примеров: **Selenium WebDriver** + **Playwright WebSocket**.
 
 | Путь | Как подключаться |
 |------|------------------|
-| `/` (UI) | `https://selenoid.autotests.cloud` |
-| `/wd/hub` | `https://selenoid.autotests.cloud/wd/hub` |
-| `/playwright/` | Create Session в UI или `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?accessKey=qa_engineer%3AaAb_-4gs53FD&enableVNC=true&enableVideo=true` |
+| `/` (UI) | `https://selenoid.qa.guru` |
+| `/wd/hub` | `https://selenoid.qa.guru/wd/hub` |
+| `/playwright/` | Create Session в UI или `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=qa_engineer%3AaAb_-4gs53FD&enableVNC=true&enableVideo=true` |
 | `/status` | UI-shaped JSON (`.state`, `.version` = **selenoid-ui** stamp) |
 | `/hub/status` | raw hub capacity (total/used/browsers; без `.version`) |
 | `/wd/hub/status` | W3C hub status — **версия hub** в `.value.message` (basic auth) |
@@ -18,17 +18,17 @@
 
 | Назначение | URL |
 |------------|-----|
-| Selenium | `https://selenoid.autotests.cloud/wd/hub` |
-| Playwright (public) | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?accessKey=qa_engineer%3AaAb_-4gs53FD&enableVNC=true&enableVideo=true` |
-| Playwright (students) | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?accessKey=user1:1234&enableVNC=true&enableVideo=true` |
-| UI | `https://selenoid.autotests.cloud/` |
-| Status (UI) | `https://selenoid.autotests.cloud/status` — `.version` = UI, не hub |
-| Hub status | `https://selenoid.autotests.cloud/hub/status` |
-| Hub logs | `https://selenoid.autotests.cloud/logs/{sessionId}` (auth; WebSocket) |
-| Hub error | `https://selenoid.autotests.cloud/error` (auth; invalid session JSON) |
-| Hub VNC | `https://selenoid.autotests.cloud/vnc/{sessionId}` (auth; WebSocket) |
-| Hub version | `https://selenoid.autotests.cloud/wd/hub/status` (auth) → `Selenoid v2.3.0 built at …` |
-| Video | `https://selenoid.autotests.cloud/video/` |
+| Selenium | `https://selenoid.qa.guru/wd/hub` |
+| Playwright (public) | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=qa_engineer%3AaAb_-4gs53FD&enableVNC=true&enableVideo=true` |
+| Playwright (students) | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=user1:1234&enableVNC=true&enableVideo=true` |
+| UI | `https://selenoid.qa.guru/` |
+| Status (UI) | `https://selenoid.qa.guru/status` — `.version` = UI, не hub |
+| Hub status | `https://selenoid.qa.guru/hub/status` |
+| Hub logs | `https://selenoid.qa.guru/logs/{sessionId}` (auth; WebSocket) |
+| Hub error | `https://selenoid.qa.guru/error` (auth; invalid session JSON) |
+| Hub VNC | `https://selenoid.qa.guru/vnc/{sessionId}` (auth; WebSocket) |
+| Hub version | `https://selenoid.qa.guru/wd/hub/status` (auth) → `Selenoid v2.3.0 built at …` |
+| Video | `https://selenoid.qa.guru/video/` |
 
 Текущие pin’ы `deploy.sh`: hub **v2.3.0**, UI **v2.3.0**, cm **v2.3.0**, video-recorder **`qaguru/video-recorder:latest`**.
 
@@ -46,23 +46,23 @@ WebDriver — Basic Auth через `/etc/nginx/selenoid.htpasswd` (обоих �
 ### Переменные для тестов
 
 ```bash
-export SELENOID_URL=https://selenoid.autotests.cloud/wd/hub
-export PW_TEST_CONNECT_WS_ENDPOINT='wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1?accessKey=qa_engineer%3AaAb_-4gs53FD&enableVNC=true&enableVideo=true'
-export SELENOID_HOST=selenoid.autotests.cloud
+export SELENOID_URL=https://selenoid.qa.guru/wd/hub
+export PW_TEST_CONNECT_WS_ENDPOINT='wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=qa_engineer%3AaAb_-4gs53FD&enableVNC=true&enableVideo=true'
+export SELENOID_HOST=selenoid.qa.guru
 ```
 
 ---
 
 ## Автодеплой (GitHub Actions)
 
-Workflow [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) в [qa-guru/selenoid.autotests.cloud](https://github.com/qa-guru/selenoid.autotests.cloud):
+Workflow [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) в [qa-guru/selenoid.qa.guru](https://github.com/qa-guru/selenoid.qa.guru):
 
 | Триггер | Когда |
 |---------|-------|
 | `workflow_dispatch` | **Ручной деплой** — Actions → deploy → Run workflow (версия стека и git ref опциональны) |
 | `repository_dispatch: deploy-selenoid` | Вызов из внешнего CI (payload: `version`, опционально `ref`) |
 
-### Secrets (Settings → Secrets → Actions в qa-guru/selenoid.autotests.cloud)
+### Secrets (Settings → Secrets → Actions в qa-guru/selenoid.qa.guru)
 
 | Secret | Пример | Описание |
 |--------|--------|----------|
@@ -79,9 +79,9 @@ Workflow скачивает артефакты в `$HOME/.selenoid-deploy` (вл
 | Variable | Default | Описание |
 |----------|---------|----------|
 | `SELENOID_CONFIG_DIR` | `/opt/selenoid` | Каталог конфигурации на сервере |
-| `SELENOID_PUBLIC_URL` | `https://selenoid.autotests.cloud` | URL для smoke test (не IP — иначе nginx отдаёт чужой cert) |
+| `SELENOID_PUBLIC_URL` | `https://selenoid.qa.guru` | URL для smoke test (не IP — иначе nginx отдаёт чужой cert) |
 
-После настройки secrets: [Actions → deploy → Run workflow](https://github.com/qa-guru/selenoid.autotests.cloud/actions/workflows/deploy.yml) — обновит сервер до выбранной версии стека.
+После настройки secrets: [Actions → deploy → Run workflow](https://github.com/qa-guru/selenoid.qa.guru/actions/workflows/deploy.yml) — обновит сервер до выбранной версии стека.
 
 ---
 
@@ -98,14 +98,14 @@ sudo DEPLOY_USER=selenoid ./deploy/bootstrap.sh
 ### Обновление стека
 
 ```bash
-# из клона qa-guru/selenoid.autotests.cloud на сервере
+# из клона qa-guru/selenoid.qa.guru на сервере
 ./deploy/deploy.sh
 ```
 
 Или скачать скрипт с GitHub:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/qa-guru/selenoid.autotests.cloud/main/deploy/deploy.sh -o deploy.sh
+curl -sL https://raw.githubusercontent.com/qa-guru/selenoid.qa.guru/main/deploy/deploy.sh -o deploy.sh
 chmod +x deploy.sh
 ./deploy.sh
 ```
@@ -131,14 +131,14 @@ SELENOID_VERSION=v2.3.0 SELENOID_UI_VERSION=v2.3.0 CM_VERSION=v2.3.0 ./deploy/de
 ### Проверка
 
 ```bash
-./deploy/smoke-remote.sh https://selenoid.autotests.cloud
+./deploy/smoke-remote.sh https://selenoid.qa.guru
 # hub revision assertion (default EXPECTED_HUB_VERSION=v2.3.0):
 # curl -u qa_engineer:'aAb_-4gs53FD' -fsSL …/wd/hub/status | jq -r .value.message
 ```
 
 ---
 
-## Nginx (selenoid.autotests.cloud)
+## Nginx (selenoid.qa.guru)
 
 Реальный конфиг на сервере: **`/etc/nginx/sites-available/selenoid`**
 
@@ -163,8 +163,8 @@ SELENOID_VERSION=v2.3.0 SELENOID_UI_VERSION=v2.3.0 CM_VERSION=v2.3.0 ./deploy/de
 Применить вручную (если CI не смог из‑за sudo):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/qa-guru/selenoid.autotests.cloud/main/deploy/nginx-selenoid.conf -o /tmp/nginx-selenoid.conf
-curl -fsSL https://raw.githubusercontent.com/qa-guru/selenoid.autotests.cloud/main/deploy/sync-nginx.sh -o /opt/selenoid/bin/sync-nginx.sh
+curl -fsSL https://raw.githubusercontent.com/qa-guru/selenoid.qa.guru/main/deploy/nginx-selenoid.conf -o /tmp/nginx-selenoid.conf
+curl -fsSL https://raw.githubusercontent.com/qa-guru/selenoid.qa.guru/main/deploy/sync-nginx.sh -o /opt/selenoid/bin/sync-nginx.sh
 chmod +x /opt/selenoid/bin/sync-nginx.sh
 sudo NGINX_CONF_SRC=/tmp/nginx-selenoid.conf /opt/selenoid/bin/sync-nginx.sh
 ```

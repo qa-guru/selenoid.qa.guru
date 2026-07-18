@@ -47,7 +47,7 @@ done
 
 | Протокол | URL |
 |----------|-----|
-| Selenium | `https://selenoid.autotests.cloud/wd/hub` |
-| Playwright | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1` |
+| Selenium | `https://selenoid.qa.guru/wd/hub` |
+| Playwright | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1` |
 
 Доступные Playwright-браузеры: `playwright-chromium`, `playwright-firefox`, `playwright-webkit`, `playwright-chrome`, `playwright-msedge`.

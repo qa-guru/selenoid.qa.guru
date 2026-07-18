@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time server bootstrap for selenoid.autotests.cloud.
+# One-time server bootstrap for selenoid.qa.guru.
 # Run with sudo on a fresh Ubuntu host with Docker installed.
 set -euo pipefail
 

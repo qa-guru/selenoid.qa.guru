@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Remote update for selenoid.autotests.cloud (run as selenoid over SSH, not root).
+# Remote update for selenoid.qa.guru (run as selenoid over SSH, not root).
 set -euo pipefail
 LOG=/tmp/selenoid-deploy.log
 exec > >(tee -a "$LOG") 2>&1

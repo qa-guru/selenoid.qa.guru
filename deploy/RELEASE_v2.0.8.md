@@ -38,7 +38,7 @@ SELENOID_VERSION=v2.0.8 SELENOID_UI_VERSION=v2.0.8 ./deploy/deploy.sh
 Проверка:
 
 ```bash
-./deploy/smoke-remote.sh https://selenoid.autotests.cloud
+./deploy/smoke-remote.sh https://selenoid.qa.guru
 ```
 
 ---
@@ -47,9 +47,9 @@ SELENOID_VERSION=v2.0.8 SELENOID_UI_VERSION=v2.0.8 ./deploy/deploy.sh
 
 | Протокол | URL |
 |----------|-----|
-| Selenium | `https://selenoid.autotests.cloud/wd/hub` |
-| Playwright | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1` |
-| UI | `https://selenoid.autotests.cloud/` |
-| Status | `https://selenoid.autotests.cloud/status` |
+| Selenium | `https://selenoid.qa.guru/wd/hub` |
+| Playwright | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1` |
+| UI | `https://selenoid.qa.guru/` |
+| Status | `https://selenoid.qa.guru/status` |
 
 WebDriver Edge: `browserName: msedge` или `MicrosoftEdge`, `browserVersion: 145.0`.

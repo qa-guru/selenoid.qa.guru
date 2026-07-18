@@ -21,7 +21,7 @@
 
 ---
 
-## Деплой на selenoid.autotests.cloud
+## Деплой на selenoid.qa.guru
 
 По умолчанию `deploy.sh` тянет **v2.0.2**:
 

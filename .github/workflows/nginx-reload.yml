@@ -23,7 +23,7 @@ jobs:
           key: ${{ secrets.SELENOID_DEPLOY_KEY }}
           script: |
             set -euxo pipefail
-            REPO="qa-guru/selenoid.autotests.cloud"
+            REPO="qa-guru/selenoid.qa.guru"
             REF="${{ inputs.ref }}"
             curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/nginx-selenoid.conf" -o /tmp/nginx-selenoid.conf
             curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/sync-nginx.sh" -o /tmp/sync-nginx.sh
@@ -31,7 +31,7 @@ jobs:
             sudo NGINX_CONF_SRC=/tmp/nginx-selenoid.conf /tmp/sync-nginx.sh
 
             SERVERNAME="${{ vars.SELENOID_PUBLIC_HOST }}"
-            SERVERNAME="${SERVERNAME:-selenoid.autotests.cloud}"
+            SERVERNAME="${SERVERNAME:-selenoid.qa.guru}"
             BASE_URL="https://${SERVERNAME}"
 
             curl -fsSL "${BASE_URL}/status" >/dev/null

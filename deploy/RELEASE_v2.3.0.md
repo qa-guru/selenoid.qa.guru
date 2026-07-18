@@ -1,4 +1,4 @@
-# Release v2.3.0 — prod selenoid.autotests.cloud
+# Release v2.3.0 — prod selenoid.qa.guru
 
 **Дата:** 13 июля 2026  
 **Предыдущий:** [v2.2.1](RELEASE_v2.2.1.md) (stack semver align)  
@@ -44,7 +44,7 @@ Hub — native-бинарник под systemd (`selenoid-hub.service`), `DOCKER
 SELENOID_VERSION=v2.3.0 SELENOID_UI_VERSION=v2.3.0 CM_VERSION=v2.3.0 ./deploy/deploy.sh
 ```
 
-Smoke: `EXPECTED_HUB_VERSION=v2.3.0 EXPECTED_UI_VERSION=v2.3.0 ./deploy/smoke-remote.sh https://selenoid.autotests.cloud`
+Smoke: `EXPECTED_HUB_VERSION=v2.3.0 EXPECTED_UI_VERSION=v2.3.0 ./deploy/smoke-remote.sh https://selenoid.qa.guru`
 
 **OUT (не трогается):** Jenkins (controller + agents), nginx-конфиг, `jenkins_home`. Docker/Debian откат — отдельная host-операция.
 

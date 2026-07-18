@@ -11,7 +11,7 @@
 
 Следующий: [v2.0.8](RELEASE_v2.0.8.md) — выровненный стек v2.0.8, `msedge`, flaky smoke fix.
 
-**Проверено на prod:** `https://selenoid.autotests.cloud` — smoke `deploy/smoke-remote.sh` проходит.
+**Проверено на prod:** `https://selenoid.qa.guru` — smoke `deploy/smoke-remote.sh` проходит.
 
 ---
 
@@ -43,7 +43,7 @@ SELENOID_VERSION=v2.0.6 SELENOID_UI_VERSION=v2.0.6 ./deploy/deploy.sh
 Проверка:
 
 ```bash
-./deploy/smoke-remote.sh https://selenoid.autotests.cloud
+./deploy/smoke-remote.sh https://selenoid.qa.guru
 ```
 
 ---
@@ -52,9 +52,9 @@ SELENOID_VERSION=v2.0.6 SELENOID_UI_VERSION=v2.0.6 ./deploy/deploy.sh
 
 | Протокол | URL |
 |----------|-----|
-| Selenium | `https://selenoid.autotests.cloud/wd/hub` |
-| Playwright | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1` |
-| UI | `https://selenoid.autotests.cloud/` |
-| Status | `https://selenoid.autotests.cloud/status` |
+| Selenium | `https://selenoid.qa.guru/wd/hub` |
+| Playwright | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1` |
+| UI | `https://selenoid.qa.guru/` |
+| Status | `https://selenoid.qa.guru/status` |
 
 Playwright-браузеры: `playwright-chromium`, `playwright-firefox`, `playwright-webkit`, `playwright-chrome`, `playwright-msedge`.

@@ -1,6 +1,6 @@
 # qa-guru Selenoid Stack — Release v2.0.0
 
-Общие release notes для стека **selenoid.autotests.cloud** и локальной разработки.
+Общие release notes для стека **selenoid.qa.guru** и локальной разработки.
 
 | Компонент | Release | Документация |
 |-----------|---------|--------------|
@@ -15,19 +15,19 @@
 
 | Назначение | URL |
 |------------|-----|
-| Selenium | `https://selenoid.autotests.cloud/wd/hub` |
-| Playwright | `wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1` |
-| UI | `https://selenoid.autotests.cloud/` |
-| Status | `https://selenoid.autotests.cloud/status` |
-| Video | `https://selenoid.autotests.cloud/video/` |
+| Selenium | `https://selenoid.qa.guru/wd/hub` |
+| Playwright | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1` |
+| UI | `https://selenoid.qa.guru/` |
+| Status | `https://selenoid.qa.guru/status` |
+| Video | `https://selenoid.qa.guru/video/` |
 
 ---
 
 ## Переменные для тестов
 
 ```bash
-export SELENOID_URL=https://selenoid.autotests.cloud/wd/hub
-export PW_TEST_CONNECT_WS_ENDPOINT=wss://selenoid.autotests.cloud/playwright/playwright-chromium/1.61.1
+export SELENOID_URL=https://selenoid.qa.guru/wd/hub
+export PW_TEST_CONNECT_WS_ENDPOINT=wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1
 ```
 
 Деплой: [README.md](README.md)

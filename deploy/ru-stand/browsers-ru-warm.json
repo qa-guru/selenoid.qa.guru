@@ -1,0 +1,60 @@
+{
+  "chrome": {
+    "default": "149.0-min",
+    "versions": {
+      "149.0-min": {
+        "image": "qaguru/webdriver-chrome:149-min",
+        "port": "4444",
+        "path": "/",
+        "shmSize": 2147483648,
+        "tmpfs": {
+          "/tmp": "size=512m"
+        },
+        "hosts": [
+          "host.docker.internal:host-gateway"
+        ]
+      },
+      "148.0-min": {
+        "image": "qaguru/webdriver-chrome:148-min",
+        "port": "4444",
+        "path": "/",
+        "shmSize": 2147483648,
+        "tmpfs": {
+          "/tmp": "size=512m"
+        },
+        "hosts": [
+          "host.docker.internal:host-gateway"
+        ]
+      }
+    }
+  },
+  "firefox": {
+    "default": "151.0-min",
+    "versions": {
+      "151.0-min": {
+        "image": "qaguru/webdriver-firefox:151-min",
+        "port": "4444",
+        "path": "/",
+        "shmSize": 2147483648,
+        "tmpfs": {
+          "/tmp": "size=512m"
+        },
+        "hosts": [
+          "host.docker.internal:host-gateway"
+        ]
+      },
+      "150.0-min": {
+        "image": "qaguru/webdriver-firefox:150-min",
+        "port": "4444",
+        "path": "/",
+        "shmSize": 2147483648,
+        "tmpfs": {
+          "/tmp": "size=512m"
+        },
+        "hosts": [
+          "host.docker.internal:host-gateway"
+        ]
+      }
+    }
+  }
+}

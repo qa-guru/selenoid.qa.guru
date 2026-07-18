@@ -24,16 +24,16 @@
 
 ---
 
-## Деплой на selenoid.autotests.cloud
+## Деплой на selenoid.qa.guru
 
-Автоматически: GitHub Actions **deploy** в [qa-guru/selenoid.autotests.cloud](https://github.com/qa-guru/selenoid.autotests.cloud/actions/workflows/deploy.yml).
+Автоматически: GitHub Actions **deploy** в [qa-guru/selenoid.qa.guru](https://github.com/qa-guru/selenoid.qa.guru/actions/workflows/deploy.yml).
 
 Вручную на сервере:
 
 ```bash
 curl -sL https://github.com/qa-guru/cm/releases/latest/download/cm_linux_amd64 -o ~/cm
 chmod +x ~/cm
-./deploy/deploy.sh   # из клона qa-guru/selenoid.autotests.cloud
+./deploy/deploy.sh   # из клона qa-guru/selenoid.qa.guru
 ```
 
 Подробнее: [deploy/README.md](README.md)

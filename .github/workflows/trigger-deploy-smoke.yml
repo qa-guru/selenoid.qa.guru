@@ -10,7 +10,7 @@ on:
       env_profile:
         description: "Env profile (-Denv=)"
         required: false
-        default: selenoid_autotests_cloud_api
+        default: selenoid_qa_guru_api
   workflow_run:
     workflows: [deploy]
     types: [completed]
@@ -34,7 +34,7 @@ jobs:
     env:
       TESTS_REPO: qa-guru/selenoid-tests
       TEST_TAGS: ${{ github.event.inputs.test_tags || 'api' }}
-      ENV_PROFILE: ${{ github.event.inputs.env_profile || 'selenoid_autotests_cloud_api' }}
+      ENV_PROFILE: ${{ github.event.inputs.env_profile || 'selenoid_qa_guru_api' }}
 
     steps:
       - name: Validate configuration
