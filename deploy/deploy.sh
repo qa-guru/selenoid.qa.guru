@@ -212,7 +212,7 @@ if [[ "$hub_via_systemd" != true ]]; then
   pkill -f "${CONFIG_DIR}/bin/selenoid" 2>/dev/null || true
   nohup "${CONFIG_DIR}/bin/selenoid" \
     -conf "${CONFIG_DIR}/browsers.json" \
-    -limit 20 \
+    -limit 25 \
     -container-network selenoid \
     -video-output-dir "${CONFIG_DIR}/video/" \
     -video-recorder-image "${VIDEO_RECORDER_IMAGE}" \

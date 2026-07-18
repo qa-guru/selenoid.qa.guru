@@ -19,7 +19,7 @@ EnvironmentFile=-/opt/selenoid/playwright-access.env
 ExecStartPre=/bin/sh -c 'docker network inspect selenoid >/dev/null 2>&1 || docker network create selenoid'
 ExecStart=/bin/bash -c 'exec /opt/selenoid/bin/selenoid \
   -conf /opt/selenoid/browsers.json \
-  -limit 20 \
+  -limit 25 \
   -container-network selenoid \
   -video-output-dir /opt/selenoid/video/ \
   -video-recorder-image qaguru/video-recorder:latest \
