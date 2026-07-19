@@ -66,7 +66,7 @@ Workflow [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) в [q
 
 | Secret | Пример | Описание |
 |--------|--------|----------|
-| `SELENOID_DEPLOY_HOST` | `136.243.89.21` | SSH-хост (**IP сервера**, не CNAME — DNS может указывать на прокси) |
+| `SELENOID_DEPLOY_HOST` | `89.248.192.30` | SSH-хост (**IP Selectel Box1**, не CNAME — DNS может указывать на прокси) |
 | `SELENOID_DEPLOY_USER` | `selenoid` | **Оставить `selenoid`** (не `qaguru`) — пользователь в группе `docker` + NOPASSWD для `sync-nginx` / hub unit |
 | `SELENOID_DEPLOY_KEY` | ed25519 private key | Ключ только для Actions → `/home/selenoid/.ssh/authorized_keys` |
 
