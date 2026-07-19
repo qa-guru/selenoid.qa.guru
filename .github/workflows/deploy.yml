@@ -8,7 +8,7 @@ on:
         required: false
         default: ''
       ui_version:
-        description: 'selenoid-ui release tag (e.g. v3.0.0-rc.1). Empty = v2.3.10 pin'
+        description: 'selenoid-ui release tag (e.g. v3.0.0-rc.2). Empty = v2.3.10 pin'
         required: false
         default: ''
       ref:
