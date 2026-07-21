@@ -25,6 +25,7 @@ ExecStart=/bin/bash -c 'exec /opt/selenoid/bin/selenoid \
   -video-recorder-image qaguru/video-recorder:latest \
   -log-output-dir /opt/selenoid/logs/ \
   -service-startup-timeout 10m \
+  -session-attempt-timeout 5m \
   -listen :4444'
 Restart=always
 RestartSec=5
