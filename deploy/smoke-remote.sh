@@ -55,30 +55,46 @@ curl_http_code() {
   return 1
 }
 
-echo "=== GET $BASE_URL/status (no auth required) ==="
+echo "=== GET $BASE_URL/status (no auth) — FLAT upstream-selenoid contract ==="
 status_json="$(curl_retry "$BASE_URL/status" -fsSL)"
 echo "$status_json" | (command -v jq >/dev/null && jq . || cat)
+
+echo "=== GET $BASE_URL/ui/status (no auth) — UI-shaped {state,...} ==="
+ui_status_json="$(curl_retry "$BASE_URL/ui/status" -fsSL)"
+echo "$ui_status_json" | (command -v jq >/dev/null && jq . || cat)
 
 if ! command -v jq >/dev/null; then
   echo "jq not found — skipping browser version assertions" >&2
   exit 0
 fi
 
+# Contract lock: public /status MUST stay FLAT (has .total, no .state wrapper).
+# Guards against re-proxying /status to selenoid-ui — the regression (648a34f) that
+# broke student autotests written against the original {total,used,...} shape.
+if jq -e 'has("total") and (has("state") | not)' <<<"$status_json" >/dev/null; then
+  echo "OK  /status is flat {total,used,queued,pending,browsers} (upstream contract)"
+else
+  echo "FAIL /status must be FLAT hub JSON (has .total, no .state) — do NOT proxy /status to selenoid-ui" >&2
+  exit 1
+fi
+
 echo "=== browser versions ==="
 for pair in "chrome:149.0" "firefox:151.0" "msedge:145.0" "playwright-chromium:1.61.1" "playwright-chrome:1.61.1" "playwright-msedge:1.61.1"; do
   browser="${pair%%:*}"
   version="${pair##*:}"
-  if jq -e --arg b "$browser" --arg v "$version" '.state.browsers[$b][$v] != null' <<<"$status_json" >/dev/null; then
+  # flat /status → .browsers[b][v]; UI /ui/status → .state.browsers[b][v]
+  if jq -e --arg b "$browser" --arg v "$version" '.browsers[$b][$v] != null' <<<"$status_json" >/dev/null \
+     && jq -e --arg b "$browser" --arg v "$version" '.state.browsers[$b][$v] != null' <<<"$ui_status_json" >/dev/null; then
     echo "OK  $browser $version"
   else
-    echo "FAIL $browser $version not in /status" >&2
+    echo "FAIL $browser $version missing in /status (flat) and/or /ui/status (.state)" >&2
     exit 1
   fi
 done
 
-status_playwright_key="$(jq -r '.playwrightAccessKey // empty' <<<"$status_json")"
+status_playwright_key="$(jq -r '.playwrightAccessKey // empty' <<<"$ui_status_json")"
 if [[ "$status_playwright_key" == "$PLAYWRIGHT_PUBLIC_ACCESS_KEY" ]]; then
-  echo "OK  /status.playwrightAccessKey matches public guest SSOT"
+  echo "OK  /ui/status.playwrightAccessKey matches public guest SSOT"
 elif [[ -z "$status_playwright_key" ]]; then
   # Pre-v2.3.6 UI had no -playwright-access-key; nginx map still gates /playwright/.
   # v2.3.6+ must expose the public key (Create Session + snippets).
@@ -87,12 +103,12 @@ elif [[ -z "$status_playwright_key" ]]; then
     v2.3.[6-9]|v2.3.[1-9][0-9]*|v2.[4-9]*|v[3-9]*) ui_minor_ok=true ;;
   esac
   if [[ "$ui_minor_ok" == true ]]; then
-    echo "FAIL /status.playwrightAccessKey empty — UI must run with -playwright-access-key" >&2
+    echo "FAIL /ui/status.playwrightAccessKey empty — UI must run with -playwright-access-key" >&2
     exit 1
   fi
-  echo "WARN /status.playwrightAccessKey empty (legacy UI without flag) — nginx accessKey checks below"
+  echo "WARN /ui/status.playwrightAccessKey empty (legacy UI without flag) — nginx accessKey checks below"
 else
-  echo "FAIL /status.playwrightAccessKey: want ${PLAYWRIGHT_PUBLIC_ACCESS_KEY}, got: ${status_playwright_key}" >&2
+  echo "FAIL /ui/status.playwrightAccessKey: want ${PLAYWRIGHT_PUBLIC_ACCESS_KEY}, got: ${status_playwright_key}" >&2
   exit 1
 fi
 
