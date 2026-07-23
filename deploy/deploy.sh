@@ -132,11 +132,6 @@ supports_flag() {
 ui_has_access_key_flag() {
   supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-access-key" && return 0
   supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-playwright-access-key" && return 0
-  # v2.3.6+ / v3+ expose access key in /ui/status; keep direct server runs deterministic
-  # even if binutils/strings is unavailable.
-  case "$UI_VERSION" in
-    v2.3.[6-9]|v2.3.[1-9][0-9]*|v2.[4-9]*|v[3-9]*) return 0 ;;
-  esac
   return 1
 }
 
@@ -155,15 +150,9 @@ if ui_has_access_key_flag; then
   elif supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-playwright-access-key"; then
     UI_PW_ARGS=(-playwright-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
     echo "OK  UI supports -playwright-access-key"
-  elif [[ "$UI_VERSION" == v3.* || "$UI_VERSION" == v[4-9]* ]]; then
-    UI_PW_ARGS=(-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
-    echo "OK  UI ${UI_VERSION} — using -access-key (strings probe unavailable)"
-  else
-    UI_PW_ARGS=(-playwright-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
-    echo "OK  UI ${UI_VERSION} — using -playwright-access-key (strings probe unavailable)"
   fi
 else
-  echo "NOTE: UI binary has no access-key flag — Create Session uses nginx accessKey"
+  echo "NOTE: UI binary has no access-key flag — Create Session uses nginx accessKey or /ui/status"
 fi
 
 echo "=== docker network selenoid ==="
