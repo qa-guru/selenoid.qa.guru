@@ -152,9 +152,15 @@ if ui_has_access_key_flag; then
   if supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-access-key"; then
     UI_PW_ARGS=(-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
     echo "OK  UI supports -access-key"
-  else
+  elif supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-playwright-access-key"; then
     UI_PW_ARGS=(-playwright-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
     echo "OK  UI supports -playwright-access-key"
+  elif [[ "$UI_VERSION" == v3.* || "$UI_VERSION" == v[4-9]* ]]; then
+    UI_PW_ARGS=(-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
+    echo "OK  UI ${UI_VERSION} — using -access-key (strings probe unavailable)"
+  else
+    UI_PW_ARGS=(-playwright-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
+    echo "OK  UI ${UI_VERSION} — using -playwright-access-key (strings probe unavailable)"
   fi
 else
   echo "NOTE: UI binary has no access-key flag — Create Session uses nginx accessKey"
