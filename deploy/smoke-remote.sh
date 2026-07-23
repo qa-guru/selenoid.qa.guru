@@ -92,23 +92,23 @@ for pair in "chrome:149.0" "firefox:151.0" "msedge:145.0" "playwright-chromium:1
   fi
 done
 
-status_playwright_key="$(jq -r '.playwrightAccessKey // empty' <<<"$ui_status_json")"
-if [[ "$status_playwright_key" == "$PLAYWRIGHT_PUBLIC_ACCESS_KEY" ]]; then
-  echo "OK  /ui/status.playwrightAccessKey matches public guest SSOT"
-elif [[ -z "$status_playwright_key" ]]; then
-  # Pre-v2.3.6 UI had no -playwright-access-key; nginx map still gates /playwright/.
-  # v2.3.6+ must expose the public key (Create Session + snippets).
+status_access_key="$(jq -r '.accessKey // .playwrightAccessKey // empty' <<<"$ui_status_json")"
+if [[ "$status_access_key" == "$PLAYWRIGHT_PUBLIC_ACCESS_KEY" ]]; then
+  echo "OK  /ui/status accessKey matches public guest SSOT"
+elif [[ -z "$status_access_key" ]]; then
+  # Pre-v2.3.6 UI had no access-key flag; nginx map still gates /playwright/.
+  # v2.3.6+ / v3+ must expose the public key (Create Session + snippets).
   ui_minor_ok=false
   case "${SELENOID_UI_VERSION:-${EXPECTED_UI_VERSION:-}}" in
     v2.3.[6-9]|v2.3.[1-9][0-9]*|v2.[4-9]*|v[3-9]*) ui_minor_ok=true ;;
   esac
   if [[ "$ui_minor_ok" == true ]]; then
-    echo "FAIL /ui/status.playwrightAccessKey empty — UI must run with -playwright-access-key" >&2
+    echo "FAIL /ui/status.accessKey empty — UI must run with -access-key or -playwright-access-key" >&2
     exit 1
   fi
-  echo "WARN /ui/status.playwrightAccessKey empty (legacy UI without flag) — nginx accessKey checks below"
+  echo "WARN /ui/status.accessKey empty (legacy UI without flag) — nginx accessKey checks below"
 else
-  echo "FAIL /ui/status.playwrightAccessKey: want ${PLAYWRIGHT_PUBLIC_ACCESS_KEY}, got: ${status_playwright_key}" >&2
+  echo "FAIL /ui/status.accessKey: want ${PLAYWRIGHT_PUBLIC_ACCESS_KEY}, got: ${status_access_key}" >&2
   exit 1
 fi
 

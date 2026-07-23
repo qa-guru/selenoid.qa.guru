@@ -117,7 +117,9 @@ for helper in cleanup-videos.sh video-retention.sh; do
   fi
 done
 
-# -playwright-access-key is gated at nginx for prod v2.3.0 binaries; pass only when present.
+# Hub/UI access-key flags differ by stack line:
+# - hub + UI v2.3.x: -playwright-access-key
+# - selenoid-ui v3.0.5+: -access-key (unified user:pass for WebDriver + Playwright)
 supports_flag() {
   local bin="$1" flag="$2"
   [[ -x "$bin" ]] || return 1
@@ -127,9 +129,10 @@ supports_flag() {
   strings "$bin" 2>/dev/null | grep -qF -- "$needle"
 }
 
-ui_has_playwright_access_key() {
+ui_has_access_key_flag() {
+  supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-access-key" && return 0
   supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-playwright-access-key" && return 0
-  # v2.3.6+ exposes /status.playwrightAccessKey; keep direct server runs deterministic
+  # v2.3.6+ / v3+ expose access key in /ui/status; keep direct server runs deterministic
   # even if binutils/strings is unavailable.
   case "$UI_VERSION" in
     v2.3.[6-9]|v2.3.[1-9][0-9]*|v2.[4-9]*|v[3-9]*) return 0 ;;
@@ -145,11 +148,16 @@ if supports_flag "${CONFIG_DIR}/bin/selenoid" "-playwright-access-key"; then
 else
   echo "NOTE: hub binary has no -playwright-access-key — nginx map gates /playwright/"
 fi
-if ui_has_playwright_access_key; then
-  UI_PW_ARGS=(-playwright-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
-  echo "OK  UI supports -playwright-access-key"
+if ui_has_access_key_flag; then
+  if supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-access-key"; then
+    UI_PW_ARGS=(-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
+    echo "OK  UI supports -access-key"
+  else
+    UI_PW_ARGS=(-playwright-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
+    echo "OK  UI supports -playwright-access-key"
+  fi
 else
-  echo "NOTE: UI binary has no -playwright-access-key — Create Session uses nginx accessKey"
+  echo "NOTE: UI binary has no access-key flag — Create Session uses nginx accessKey"
 fi
 
 echo "=== docker network selenoid ==="
