@@ -6,9 +6,9 @@ set -euo pipefail
 CONFIG_DIR="${SELENOID_CONFIG_DIR:-/opt/selenoid}"
 CM_BIN="${CM_BIN:-$HOME/cm}"
 CM_URL="${CM_URL:-https://github.com/qa-guru/cm/releases/latest/download/cm_linux_amd64}"
-VERSION="${SELENOID_VERSION:-v2.3.0}"
-UI_VERSION="${SELENOID_UI_VERSION:-v2.3.0}"
-CM_VERSION="${CM_VERSION:-v2.3.0}"
+VERSION="${SELENOID_VERSION:-v3.0.0}"
+UI_VERSION="${SELENOID_UI_VERSION:-v3.0.7}"
+CM_VERSION="${CM_VERSION:-v3.0.0}"
 VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
 GITHUB_OWNER="${GITHUB_OWNER:-qa-guru}"
 PLAYWRIGHT_PUBLIC_KEY_DEFAULT='qa_engineer:aAb_-4gs53FD'
