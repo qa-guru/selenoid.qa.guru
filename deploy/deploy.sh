@@ -11,10 +11,6 @@ UI_VERSION="${SELENOID_UI_VERSION:-v3.0.8}"
 CM_VERSION="${CM_VERSION:-v3.0.1}"
 VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
 GITHUB_OWNER="${GITHUB_OWNER:-qa-guru}"
-PLAYWRIGHT_PUBLIC_KEY_DEFAULT='qa_engineer:aAb_-4gs53FD'
-PLAYWRIGHT_STUDENT_ACCESS_KEY="${PLAYWRIGHT_STUDENT_ACCESS_KEY:-user1:1234}"
-PLAYWRIGHT_PUBLIC_ACCESS_KEY="${PLAYWRIGHT_PUBLIC_ACCESS_KEY:-$PLAYWRIGHT_PUBLIC_KEY_DEFAULT}"
-PLAYWRIGHT_ACCESS_KEYS="${PLAYWRIGHT_ACCESS_KEYS:-${PLAYWRIGHT_STUDENT_ACCESS_KEY},${PLAYWRIGHT_PUBLIC_ACCESS_KEY}}"
 version_args=()
 if [[ -n "$VERSION" ]]; then
   version_args=(-v "$VERSION")
@@ -105,11 +101,6 @@ docker pull "${VIDEO_RECORDER_IMAGE}"
 mkdir -p "$CONFIG_DIR/video" "$CONFIG_DIR/logs"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cat >"${CONFIG_DIR}/playwright-access.env" <<EOF
-PLAYWRIGHT_ACCESS_KEYS='${PLAYWRIGHT_ACCESS_KEYS}'
-PLAYWRIGHT_PUBLIC_ACCESS_KEY='${PLAYWRIGHT_PUBLIC_ACCESS_KEY}'
-EOF
-chmod 640 "${CONFIG_DIR}/playwright-access.env"
 # cleanup/retention scripts live next to deploy.sh when run from a clone or GHA staging.
 for helper in cleanup-videos.sh video-retention.sh; do
   if [[ -f "${SCRIPT_DIR}/${helper}" ]]; then
@@ -117,43 +108,12 @@ for helper in cleanup-videos.sh video-retention.sh; do
   fi
 done
 
-# Hub/UI access-key flags differ by stack line:
-# - hub + UI v2.3.x: -playwright-access-key
-# - selenoid-ui v3.0.5+: -access-key (unified user:pass for WebDriver + Playwright)
-supports_flag() {
-  local bin="$1" flag="$2"
-  [[ -x "$bin" ]] || return 1
-  # Go flag.String names are embedded without leading dashes (e.g. playwright-access-key).
-  local needle="${flag#--}"
-  needle="${needle#-}"
-  strings "$bin" 2>/dev/null | grep -qF -- "$needle"
-}
-
-ui_has_access_key_flag() {
-  supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-access-key" && return 0
-  supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-playwright-access-key" && return 0
-  return 1
-}
-
-HUB_PW_ARGS=()
-UI_PW_ARGS=()
-if supports_flag "${CONFIG_DIR}/bin/selenoid" "-playwright-access-key"; then
-  HUB_PW_ARGS=(-playwright-access-key="${PLAYWRIGHT_ACCESS_KEYS}")
-  echo "OK  hub supports -playwright-access-key"
-else
-  echo "NOTE: hub binary has no -playwright-access-key — nginx map gates /playwright/"
-fi
-if ui_has_access_key_flag; then
-  if supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-access-key"; then
-    UI_PW_ARGS=(-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
-    echo "OK  UI supports -access-key"
-  elif supports_flag "${CONFIG_DIR}/bin/selenoid-ui" "-playwright-access-key"; then
-    UI_PW_ARGS=(-playwright-access-key="${PLAYWRIGHT_PUBLIC_ACCESS_KEY}")
-    echo "OK  UI supports -playwright-access-key"
-  fi
-else
-  echo "NOTE: UI binary has no access-key flag — Create Session uses nginx accessKey or /ui/status"
-fi
+# Auth SSOT (v3.0.7+):
+# - WebDriver: nginx Basic Auth (htpasswd)
+# - Playwright WS: nginx map on ?accessKey=
+# - UI Create Session / snippets: build-time hubAuth (VITE_HUB_ACCESS_KEY), not a runtime flag
+# Drop stale playwright-access.env left by older deploys.
+rm -f "${CONFIG_DIR}/playwright-access.env"
 
 echo "=== docker network selenoid ==="
 docker network inspect selenoid >/dev/null 2>&1 || docker network create selenoid
@@ -171,16 +131,14 @@ HUB_UNIT_SRC="${HUB_UNIT_SRC:-${SCRIPT_DIR}/selenoid-hub.service}"
 if [[ ! -f "$HUB_UNIT_SRC" && -f /tmp/selenoid-hub.service ]]; then
   HUB_UNIT_SRC=/tmp/selenoid-hub.service
 fi
-# Render unit without -playwright-access-key when the binary lacks the flag.
+# Strip legacy access-key EnvironmentFile / flags from older unit copies.
 HUB_UNIT_RENDER="/tmp/selenoid-hub.service.rendered"
 if [[ -f "$HUB_UNIT_SRC" ]]; then
-  if [[ ${#HUB_PW_ARGS[@]} -eq 0 ]]; then
-    sed -e '/EnvironmentFile=.*playwright-access.env/d' \
-        -e '/-playwright-access-key=/d' \
-        "$HUB_UNIT_SRC" >"$HUB_UNIT_RENDER"
-  else
-    cp "$HUB_UNIT_SRC" "$HUB_UNIT_RENDER"
-  fi
+  sed -e '/EnvironmentFile=.*playwright-access.env/d' \
+      -e '/EnvironmentFile=.*access.env/d' \
+      -e '/-playwright-access-key=/d' \
+      -e '/-access-key=/d' \
+      "$HUB_UNIT_SRC" >"$HUB_UNIT_RENDER"
   HUB_UNIT_SRC="$HUB_UNIT_RENDER"
 fi
 HUB_UNIT_DEST="/etc/systemd/system/selenoid-hub.service"
@@ -220,7 +178,6 @@ if [[ "$hub_via_systemd" != true ]]; then
     -video-output-dir "${CONFIG_DIR}/video/" \
     -video-recorder-image "${VIDEO_RECORDER_IMAGE}" \
     -log-output-dir "${CONFIG_DIR}/logs/" \
-    "${HUB_PW_ARGS[@]}" \
     -listen :4444 \
     >> "${CONFIG_DIR}/logs/selenoid.log" 2>&1 &
 fi
@@ -250,7 +207,6 @@ docker run -d --name selenoid-ui \
   "$UI_IMAGE" \
     -selenoid-uri=http://127.0.0.1:4444 \
     -browsers-conf=/etc/selenoid/browsers.json \
-    "${UI_PW_ARGS[@]}" \
     -listen=:8080
 
 echo "=== local hub status ==="

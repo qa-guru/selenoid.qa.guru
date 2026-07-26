@@ -11,9 +11,10 @@ BASE_URL="${BASE_URL%/}"
 SELENOID_USER="${SELENOID_USER:-qa_engineer}"
 SELENOID_PASSWORD="${SELENOID_PASSWORD:-aAb_-4gs53FD}"
 AUTH=(-u "${SELENOID_USER}:${SELENOID_PASSWORD}")
-PLAYWRIGHT_PUBLIC_KEY_DEFAULT='qa_engineer:aAb_-4gs53FD'
-PLAYWRIGHT_STUDENT_ACCESS_KEY="${PLAYWRIGHT_STUDENT_ACCESS_KEY:-user1:1234}"
-PLAYWRIGHT_PUBLIC_ACCESS_KEY="${PLAYWRIGHT_PUBLIC_ACCESS_KEY:-$PLAYWRIGHT_PUBLIC_KEY_DEFAULT}"
+# Guest tokens for nginx ?accessKey= checks (same user:pass as Basic Auth).
+PUBLIC_ACCESS_KEY_DEFAULT='qa_engineer:aAb_-4gs53FD'
+STUDENT_ACCESS_KEY="${STUDENT_ACCESS_KEY:-${PLAYWRIGHT_STUDENT_ACCESS_KEY:-user1:1234}}"
+PUBLIC_ACCESS_KEY="${PUBLIC_ACCESS_KEY:-${PLAYWRIGHT_PUBLIC_ACCESS_KEY:-$PUBLIC_ACCESS_KEY_DEFAULT}}"
 CURL_RETRIES="${CURL_RETRIES:-5}"
 CURL_RETRY_DELAY="${CURL_RETRY_DELAY:-3}"
 PLAYWRIGHT_SMOKE_TIMEOUT="${PLAYWRIGHT_SMOKE_TIMEOUT:-20}"
@@ -92,25 +93,13 @@ for pair in "chrome:149.0" "firefox:151.0" "msedge:145.0" "playwright-chromium:1
   fi
 done
 
-status_access_key="$(jq -r '.accessKey // .playwrightAccessKey // empty' <<<"$ui_status_json")"
-if [[ "$status_access_key" == "$PLAYWRIGHT_PUBLIC_ACCESS_KEY" ]]; then
-  echo "OK  /ui/status accessKey matches public guest SSOT"
-elif [[ -z "$status_access_key" ]]; then
-  # Pre-v2.3.6 UI had no access-key flag; nginx map still gates /playwright/.
-  # v2.3.6+ / v3+ must expose the public key (Create Session + snippets).
-  ui_minor_ok=false
-  case "${SELENOID_UI_VERSION:-${EXPECTED_UI_VERSION:-}}" in
-    v2.3.[6-9]|v2.3.[1-9][0-9]*|v2.[4-9]*|v[3-9]*) ui_minor_ok=true ;;
-  esac
-  if [[ "$ui_minor_ok" == true ]]; then
-    echo "FAIL /ui/status.accessKey empty — UI must run with -access-key or -playwright-access-key" >&2
-    exit 1
-  fi
-  echo "WARN /ui/status.accessKey empty (legacy UI without flag) — nginx accessKey checks below"
-else
-  echo "FAIL /ui/status.accessKey: want ${PLAYWRIGHT_PUBLIC_ACCESS_KEY}, got: ${status_access_key}" >&2
+# UI v3.0.7+: guest creds are build-time hubAuth (VITE_HUB_ACCESS_KEY), not /ui/status.accessKey
+# and not a runtime -access-key / -playwright-access-key flag.
+if jq -e 'has("accessKey") or has("playwrightAccessKey")' <<<"$ui_status_json" >/dev/null; then
+  echo "FAIL /ui/status must not expose accessKey/playwrightAccessKey (hubAuth is build-time)" >&2
   exit 1
 fi
+echo "OK  /ui/status has no accessKey field (hubAuth build-time)"
 
 echo "=== GET $BASE_URL/ (UI, no auth) ==="
 ui_code="$(curl_http_code "$BASE_URL/")"
@@ -120,28 +109,6 @@ else
   echo "FAIL UI should be public without credentials (HTTP $ui_code)" >&2
   exit 1
 fi
-
-echo "=== UI bundle: no free playwrightAccessKey (Create Session ReferenceError) ==="
-# Half-wired builds call playwrightEndpoint(..., playwrightAccessKey) from Launch
-# without declaring/passing the prop → Uncaught ReferenceError in the browser.
-ui_html="$(curl_retry "$BASE_URL/" -fsSL)"
-ui_asset="$(printf '%s' "$ui_html" | sed -n 's/.*src="\([^"]*\/assets\/index-[^"]*\.js\)".*/\1/p' | head -1)"
-if [[ -z "$ui_asset" ]]; then
-  echo "FAIL could not locate UI index-*.js asset in /" >&2
-  exit 1
-fi
-ui_js_url="$BASE_URL${ui_asset}"
-# Absolute asset paths only; reject protocol-relative / external URLs.
-if [[ "$ui_asset" != /* ]]; then
-  ui_js_url="$BASE_URL/$ui_asset"
-fi
-ui_js="$(curl_retry "$ui_js_url" -fsSL)"
-if printf '%s' "$ui_js" | grep -qE '[, (]playwrightAccessKey\)'; then
-  echo "FAIL UI bundle passes free variable playwrightAccessKey into a call (Create Session will throw)" >&2
-  echo "     asset: $ui_js_url" >&2
-  exit 1
-fi
-echo "OK  UI bundle has no free playwrightAccessKey call arg ($ui_asset)"
 
 echo "=== GET $BASE_URL/wd/hub/status without auth (expect 401) ==="
 wd_no_auth="$(curl_http_code "$BASE_URL/wd/hub/status")"
@@ -208,7 +175,7 @@ else
 fi
 
 echo "=== GET $BASE_URL/playwright/... with student/public accessKey (expect 400 — WS upgrade required) ==="
-for key in "$PLAYWRIGHT_STUDENT_ACCESS_KEY" "$PLAYWRIGHT_PUBLIC_ACCESS_KEY"; do
+for key in "$STUDENT_ACCESS_KEY" "$PUBLIC_ACCESS_KEY"; do
   encoded_key="$(urlencode "$key")"
   pw_code="$(curl_http_code "$BASE_URL/playwright/playwright-chromium/1.61.1?accessKey=${encoded_key}" --max-time "$PLAYWRIGHT_SMOKE_TIMEOUT")"
   if [[ "$pw_code" == "400" || "$pw_code" == "426" ]]; then

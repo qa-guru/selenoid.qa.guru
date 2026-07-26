@@ -41,7 +41,7 @@
 | WebDriver `/wd/hub` (Basic Auth) | `user1` / `1234` | `qa_engineer` / `aAb_-4gs53FD` |
 | Playwright `/playwright/` (query `accessKey`) | `user1:1234` | `qa_engineer:aAb_-4gs53FD` (`:` → `%3A` в URL) |
 
-WebDriver — Basic Auth через `/etc/nginx/selenoid.htpasswd` (обоих пользователей заводит `sync-nginx.sh`). Playwright — `accessKey` в query, т.к. браузерный WS не умеет Basic Auth: hub-ключи в `/opt/selenoid/playwright-access.env` → `-playwright-access-key` (systemd); UI получает public key через свой flag → Create Session / сниппеты подставляют его из `/status.playwrightAccessKey`.
+WebDriver — Basic Auth через `/etc/nginx/selenoid.htpasswd` (обоих пользователей заводит `sync-nginx.sh`). Playwright — `accessKey` в query (nginx map), т.к. браузерный WS не умеет Basic Auth. UI Create Session / сниппеты — build-time `hubAuth` (`VITE_HUB_ACCESS_KEY`), без runtime `-access-key` / `-playwright-access-key` и без `/ui/status.accessKey`.
 
 ### Переменные для тестов
 
@@ -201,7 +201,6 @@ sudo NGINX_CONF_SRC=/tmp/nginx-selenoid.conf /opt/selenoid/bin/sync-nginx.sh
   bin/selenoid-ui
   video/
   logs/
-  playwright-access.env
 /home/selenoid/cm       # бинарник cm (только у пользователя selenoid)
 /etc/systemd/system/selenoid-hub.service   # автозапуск hub (native binary)
 ```

@@ -98,8 +98,8 @@ jobs:
             export CM_VERSION=v3.0.1
             export GIT_REVISION="${GIT_REVISION:-v3.0.1}"
             echo "Deploy pins: SELENOID_VERSION=${SELENOID_VERSION:-default} SELENOID_UI_VERSION=${SELENOID_UI_VERSION} CM_VERSION=${CM_VERSION}"
-            # Prove we are on the optional-flag deploy.sh (not a stale curl cache).
-            grep -q supports_flag "$STAGING/deploy.sh"
+            # Prove we are on the current deploy.sh (not a stale curl cache).
+            grep -q download_binary "$STAGING/deploy.sh"
             bash "$STAGING/deploy.sh"
 
       - name: Smoke test (public)
