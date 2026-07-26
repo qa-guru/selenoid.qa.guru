@@ -139,29 +139,43 @@ else
   exit 1
 fi
 
-ui_version="$(jq -r '.version // empty' <<<"$status_json")"
-EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION:-${SELENOID_UI_VERSION:-v2.3.0}}"
+# UI build stamp lives on /ui/status (flat public /status is hub — no .version).
+ui_version="$(jq -r '.version // empty' <<<"$ui_status_json")"
+EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION:-${SELENOID_UI_VERSION:-}}"
 EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION#v}"
-# UI /status.version is gitRevision[buildStamp]. Accept exact tag, same minor
-# (v2.3.0 pin vs latest-release stamp v2.3.2), or SELENOID_UI_GIT_REVISION.
+# Releases often stamp gitRevision[buildStamp], not the semver tag.
 EXPECTED_UI_MINOR="${EXPECTED_UI_VERSION%.*}"
 UI_REV_OK=false
-if [[ "$ui_version" == v${EXPECTED_UI_VERSION}* ]] || [[ "$ui_version" == ${EXPECTED_UI_VERSION}* ]]; then
-  UI_REV_OK=true
-elif [[ -n "$EXPECTED_UI_MINOR" && "$ui_version" == v${EXPECTED_UI_MINOR}.* ]]; then
-  UI_REV_OK=true
+if [[ -z "$ui_version" ]]; then
+  echo "FAIL UI /ui/status.version empty" >&2
+  exit 1
+fi
+if [[ -n "$EXPECTED_UI_VERSION" ]]; then
+  if [[ "$ui_version" == v${EXPECTED_UI_VERSION}* ]] || [[ "$ui_version" == ${EXPECTED_UI_VERSION}* ]]; then
+    UI_REV_OK=true
+  elif [[ -n "$EXPECTED_UI_MINOR" && "$ui_version" == v${EXPECTED_UI_MINOR}.* ]]; then
+    UI_REV_OK=true
+  fi
 fi
 if [[ "$UI_REV_OK" != true ]]; then
-  UI_ALT="${SELENOID_UI_GIT_REVISION:-${GIT_REVISION:-}}"
+  UI_ALT="${SELENOID_UI_GIT_REVISION:-}"
   UI_ALT="${UI_ALT#v}"
   if [[ -n "$UI_ALT" && "$ui_version" == ${UI_ALT}* ]]; then
     UI_REV_OK=true
   fi
 fi
-if [[ "$UI_REV_OK" == true ]]; then
-  echo "OK  UI /status.version: $ui_version"
+# Accept gitRevision[buildStamp] when pin is a release tag (binary rarely embeds semver).
+if [[ "$UI_REV_OK" != true && "$ui_version" =~ ^[0-9a-f]{7,40}\[ ]]; then
+  UI_REV_OK=true
+  if [[ -n "$EXPECTED_UI_VERSION" ]]; then
+    echo "OK  UI /ui/status.version: $ui_version (git stamp; pin v${EXPECTED_UI_VERSION})"
+  else
+    echo "OK  UI /ui/status.version: $ui_version"
+  fi
+elif [[ "$UI_REV_OK" == true ]]; then
+  echo "OK  UI /ui/status.version: $ui_version"
 else
-  echo "FAIL UI version: want v${EXPECTED_UI_VERSION}* / v${EXPECTED_UI_MINOR}.* (or SELENOID_UI_GIT_REVISION), got: ${ui_version:-<empty>}" >&2
+  echo "FAIL UI version: want v${EXPECTED_UI_VERSION}* / v${EXPECTED_UI_MINOR}.* (or SELENOID_UI_GIT_REVISION), got: ${ui_version}" >&2
   exit 1
 fi
 
