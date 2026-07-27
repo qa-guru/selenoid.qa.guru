@@ -30,7 +30,7 @@
 | Hub version | `https://selenoid.qa.guru/wd/hub/status` (auth) → `Selenoid v3.0.2 built at …` |
 | Video | `https://selenoid.qa.guru/video/` |
 
-Текущие pin’ы `deploy.sh`: hub **v3.0.2**, UI **v3.0.9**, cm **v3.0.1**, video-recorder **`qaguru/video-recorder:latest`**. См. [RELEASE_v3.0.2.md](RELEASE_v3.0.2.md) (access-key rename + UI typecheck patch).
+Текущие pin’ы `deploy.sh`: hub **v3.0.2**, UI **v3.0.10**, cm **v3.0.1**, video-recorder **`qaguru/video-recorder:latest`**. См. [RELEASE_v3.0.2.md](RELEASE_v3.0.2.md) (access-key rename + UI typecheck patch).
 
 ### Демо-доступ
 
@@ -122,10 +122,10 @@ chmod +x deploy.sh
 ./deploy/remote-update.sh
 ```
 
-Pin версии (опционально; default hub **v3.0.2**, UI **v3.0.9**, cm **v3.0.1**):
+Pin версии (опционально; default hub **v3.0.2**, UI **v3.0.10**, cm **v3.0.1**):
 
 ```bash
-SELENOID_VERSION=v3.0.2 SELENOID_UI_VERSION=v3.0.9 CM_VERSION=v3.0.1 ./deploy/deploy.sh
+SELENOID_VERSION=v3.0.2 SELENOID_UI_VERSION=v3.0.10 CM_VERSION=v3.0.1 ./deploy/deploy.sh
 ```
 
 ### Проверка
