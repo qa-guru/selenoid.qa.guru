@@ -98,7 +98,7 @@ while read -r img; do
 done < <(pull_images)
 docker pull "${VIDEO_RECORDER_IMAGE}"
 
-mkdir -p "$CONFIG_DIR/video" "$CONFIG_DIR/logs"
+mkdir -p "$CONFIG_DIR/video" "$CONFIG_DIR/logs" "$CONFIG_DIR/har"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # cleanup/retention scripts live next to deploy.sh when run from a clone or GHA staging.
@@ -178,6 +178,7 @@ if [[ "$hub_via_systemd" != true ]]; then
     -video-output-dir "${CONFIG_DIR}/video/" \
     -video-recorder-image "${VIDEO_RECORDER_IMAGE}" \
     -log-output-dir "${CONFIG_DIR}/logs/" \
+    -har-output-dir "${CONFIG_DIR}/har/" \
     -listen :4444 \
     >> "${CONFIG_DIR}/logs/selenoid.log" 2>&1 &
 fi

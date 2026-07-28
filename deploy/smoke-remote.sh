@@ -200,6 +200,16 @@ for key in "$STUDENT_ACCESS_KEY" "$PUBLIC_ACCESS_KEY"; do
   fi
 done
 
+echo "=== GET $BASE_URL/har/?json (expect 200 — HAR listing enabled) ==="
+har_list="$(curl -sSL "$BASE_URL/har/?json" 2>/dev/null || true)"
+if echo "$har_list" | jq -e '.total != null and (.videos | type == "array")' >/dev/null 2>&1; then
+  echo "OK  /har/?json listing enabled (total=$(echo "$har_list" | jq -r .total))"
+else
+  echo "FAIL /har/?json should list HAR files (got: ${har_list:0:160})" >&2
+  echo "     (hub needs -har-output-dir in selenoid-hub.service / deploy.sh)" >&2
+  exit 1
+fi
+
 echo "=== GET $BASE_URL/logs/unknown-session with auth (expect 400 — WS upgrade required) ==="
 logs_code="$(curl_http_code "$BASE_URL/logs/unknown-session" "${AUTH[@]}")"
 if [[ "$logs_code" == "400" ]]; then
