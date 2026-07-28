@@ -27,10 +27,10 @@
 | Hub logs | `https://selenoid.qa.guru/logs/{sessionId}` (auth; WebSocket) |
 | Hub error | `https://selenoid.qa.guru/error` (auth; invalid session JSON) |
 | Hub VNC | `https://selenoid.qa.guru/vnc/{sessionId}` (auth; WebSocket) |
-| Hub version | `https://selenoid.qa.guru/wd/hub/status` (auth) → `Selenoid v3.0.2 built at …` |
+| Hub version | `https://selenoid.qa.guru/wd/hub/status` (auth) → `Selenoid v3.0.4 built at …` |
 | Video | `https://selenoid.qa.guru/video/` |
 
-Текущие pin’ы `deploy.sh`: hub **v3.0.2**, UI **v3.0.12**, cm **v3.0.1**, video-recorder **`qaguru/video-recorder:latest`**. См. [RELEASE_v3.0.2.md](RELEASE_v3.0.2.md) (access-key rename + UI typecheck patch).
+Текущие pin’ы `deploy.sh`: hub **v3.0.4**, UI **v3.0.13**, cm **v3.0.1**, video-recorder **`qaguru/video-recorder:latest`**. См. [RELEASE_v3.0.4.md](RELEASE_v3.0.4.md) (`harContent` meta\|bodies + UI Capabilities).
 
 ### Демо-доступ
 
@@ -122,10 +122,10 @@ chmod +x deploy.sh
 ./deploy/remote-update.sh
 ```
 
-Pin версии (опционально; default hub **v3.0.2**, UI **v3.0.12**, cm **v3.0.1**):
+Pin версии (опционально; default hub **v3.0.4**, UI **v3.0.13**, cm **v3.0.1**):
 
 ```bash
-SELENOID_VERSION=v3.0.2 SELENOID_UI_VERSION=v3.0.12 CM_VERSION=v3.0.1 ./deploy/deploy.sh
+SELENOID_VERSION=v3.0.4 SELENOID_UI_VERSION=v3.0.13 CM_VERSION=v3.0.1 ./deploy/deploy.sh
 ```
 
 ### Проверка
