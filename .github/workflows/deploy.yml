@@ -8,7 +8,7 @@ on:
         required: false
         default: ''
       ui_version:
-        description: 'selenoid-ui release tag (e.g. v3.0.15). Empty = v3.0.15 pin'
+        description: 'selenoid-ui release tag (e.g. v3.0.16). Empty = v3.0.16 pin'
         required: false
         default: ''
       ref:
@@ -37,16 +37,16 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
             ui="${{ inputs.ui_version }}"
-            echo "ui_version=${ui:-v3.0.15}" >> "$GITHUB_OUTPUT"
+            echo "ui_version=${ui:-v3.0.16}" >> "$GITHUB_OUTPUT"
             echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
           elif [[ -n "${{ github.event.client_payload.version }}" ]]; then
             echo "tag=${{ github.event.client_payload.version }}" >> "$GITHUB_OUTPUT"
             ui="${{ github.event.client_payload.ui_version }}"
-            echo "ui_version=${ui:-v3.0.15}" >> "$GITHUB_OUTPUT"
+            echo "ui_version=${ui:-v3.0.16}" >> "$GITHUB_OUTPUT"
             echo "ref=${{ github.event.client_payload.ref || 'main' }}" >> "$GITHUB_OUTPUT"
           else
             echo "tag=" >> "$GITHUB_OUTPUT"
-            echo "ui_version=v3.0.15" >> "$GITHUB_OUTPUT"
+            echo "ui_version=v3.0.16" >> "$GITHUB_OUTPUT"
             echo "ref=main" >> "$GITHUB_OUTPUT"
           fi
 
@@ -96,7 +96,7 @@ jobs:
             export HUB_UNIT_SRC=/tmp/selenoid-hub.service
             # Hub pin v3.0.5 / CM v3.0.2; UI from workflow input / client_payload.
             export CM_VERSION=v3.0.2
-            export GIT_REVISION="${GIT_REVISION:-v3.0.5}"
+            export GIT_REVISION="${GIT_REVISION:-v3.0.6}"
             echo "Deploy pins: SELENOID_VERSION=${SELENOID_VERSION:-default} SELENOID_UI_VERSION=${SELENOID_UI_VERSION} CM_VERSION=${CM_VERSION}"
             # Prove we are on the current deploy.sh (not a stale curl cache).
             grep -q download_binary "$STAGING/deploy.sh"
@@ -107,7 +107,7 @@ jobs:
           SELENOID_USER: qa_engineer
           SELENOID_PASSWORD: "aAb_-4gs53FD"
           SELENOID_PUBLIC_URL: ${{ vars.SELENOID_PUBLIC_URL }}
-          SELENOID_VERSION: ${{ steps.meta.outputs.tag || 'v3.0.5' }}
+          SELENOID_VERSION: ${{ steps.meta.outputs.tag || 'v3.0.6' }}
           SELENOID_UI_VERSION: ${{ steps.meta.outputs.ui_version }}
         run: |
           if [[ -z "${SELENOID_PUBLIC_URL:-}" ]]; then
