@@ -179,7 +179,8 @@ curl -fsSL https://raw.githubusercontent.com/qa-guru/selenoid.qa.guru/main/deplo
 curl -fsSL https://raw.githubusercontent.com/qa-guru/selenoid.qa.guru/main/deploy/sync-nginx.sh -o /opt/selenoid/bin/sync-nginx.sh
 curl -fsSL https://raw.githubusercontent.com/qa-guru/selenoid.qa.guru/main/deploy/lib/require-public-auth.sh -o /opt/selenoid/lib/require-public-auth.sh
 chmod +x /opt/selenoid/bin/sync-nginx.sh
-sudo env SELENOID_PUBLIC_USER="$SELENOID_PUBLIC_USER" SELENOID_PUBLIC_PASSWORD="$SELENOID_PUBLIC_PASSWORD" \
+sudo -n \
+  SELENOID_PUBLIC_USER="$SELENOID_PUBLIC_USER" SELENOID_PUBLIC_PASSWORD="$SELENOID_PUBLIC_PASSWORD" \
   NGINX_CONF_SRC=/tmp/nginx-selenoid.conf /opt/selenoid/bin/sync-nginx.sh
 ```
 

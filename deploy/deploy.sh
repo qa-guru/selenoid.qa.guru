@@ -352,7 +352,7 @@ NGINX_CONF="${NGINX_CONF_SRC:-/tmp/nginx-selenoid.conf}"
 NGINX_SYNC="${NGINX_SYNC_SCRIPT:-/tmp/sync-nginx.sh}"
 if [[ ! -f "$NGINX_CONF" || ! -f "$NGINX_SYNC" ]]; then
   echo "WARN: nginx config not found ($NGINX_CONF / $NGINX_SYNC) — skip"
-elif timeout 60 sudo -n env \
+elif timeout 60 sudo -n \
   NGINX_CONF_SRC="$NGINX_CONF" \
   SELENOID_PUBLIC_USER="${SELENOID_PUBLIC_USER:?SELENOID_PUBLIC_USER is required}" \
   SELENOID_PUBLIC_PASSWORD="${SELENOID_PUBLIC_PASSWORD:?SELENOID_PUBLIC_PASSWORD is required}" \

@@ -53,7 +53,7 @@ jobs:
             mkdir -p /tmp/lib
             curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/lib/require-public-auth.sh" -o /tmp/lib/require-public-auth.sh
             chmod +x /tmp/sync-nginx.sh
-            sudo env \
+            sudo -n \
               NGINX_CONF_SRC=/tmp/nginx-selenoid.conf \
               SELENOID_PUBLIC_USER="${SELENOID_PUBLIC_USER}" \
               SELENOID_PUBLIC_PASSWORD="${SELENOID_PUBLIC_PASSWORD}" \
