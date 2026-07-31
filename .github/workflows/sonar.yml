@@ -41,7 +41,9 @@ jobs:
               json.loads(path.read_text(encoding="utf-8"))
               print(f"json ok: {path}")
           PY
-          actionlint .github/workflows/*.yml
+          # Disable actionlint→shellcheck style findings (SC2129); deploy/*.sh already checked with -S error.
+          actionlint -shellcheck= .github/workflows/*.yml
+
           # nginx config syntax is host-dependent; ensure template is non-empty and has server blocks
           grep -q "server {" deploy/nginx-selenoid.conf
           test -x deploy/test-auth-wiring.sh
