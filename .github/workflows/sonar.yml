@@ -26,13 +26,14 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y shellcheck
-          npm install -g actionlint@1.7.7
+          curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash \
+            | bash -s -- 1.7.7 /usr/local/bin
 
       - name: Validate shell / JSON / workflows
         run: |
           set -euo pipefail
           mapfile -t shells < <(find deploy -type f -name '*.sh' | sort)
-          shellcheck -x "${shells[@]}"
+          shellcheck -S error -x "${shells[@]}"
           python - <<'PY'
           import json
           from pathlib import Path
