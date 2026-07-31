@@ -31,6 +31,17 @@ jobs:
             exit 1
           fi
 
+      - name: Upload nginx scripts
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SELENOID_DEPLOY_HOST }}
+          username: ${{ secrets.SELENOID_DEPLOY_USER }}
+          key: ${{ secrets.SELENOID_DEPLOY_KEY }}
+          source: "deploy/nginx-selenoid.conf,deploy/sync-nginx.sh,deploy/lib/require-public-auth.sh"
+          target: ".selenoid-nginx-reload"
+          strip_components: 1
+          overwrite: true
+
       - uses: appleboy/ssh-action@v1.2.5
         env:
           SELENOID_PUBLIC_USER: ${{ vars.SELENOID_PUBLIC_USER }}
@@ -46,13 +57,11 @@ jobs:
               echo "SELENOID_PUBLIC_USER and SELENOID_PUBLIC_PASSWORD must be set for nginx sync" >&2
               exit 1
             fi
-            REPO="qa-guru/selenoid.qa.guru"
-            REF="${{ inputs.ref }}"
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/nginx-selenoid.conf" -o /tmp/nginx-selenoid.conf
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/sync-nginx.sh" -o /tmp/sync-nginx.sh
-            mkdir -p /tmp/lib
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/lib/require-public-auth.sh" -o /tmp/lib/require-public-auth.sh
-            chmod +x /tmp/sync-nginx.sh
+            STAGING="$HOME/.selenoid-nginx-reload"
+            install -m 644 "$STAGING/nginx-selenoid.conf" /tmp/nginx-selenoid.conf
+            install -m 755 "$STAGING/sync-nginx.sh" /tmp/sync-nginx.sh
+            install -d /tmp/lib
+            install -m 644 "$STAGING/lib/require-public-auth.sh" /tmp/lib/require-public-auth.sh
             sudo -n \
               NGINX_CONF_SRC=/tmp/nginx-selenoid.conf \
               SELENOID_PUBLIC_USER="${SELENOID_PUBLIC_USER}" \
