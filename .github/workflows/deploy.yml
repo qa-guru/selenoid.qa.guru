@@ -26,10 +26,24 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: selenoid-production
+    env:
+      SELENOID_PUBLIC_USER: ${{ vars.SELENOID_PUBLIC_USER }}
+      SELENOID_PUBLIC_PASSWORD: ${{ secrets.SELENOID_PUBLIC_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.ref }}
+
+      - name: Require production auth configuration
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -z "${SELENOID_PUBLIC_USER:-}" ]] && missing+=(SELENOID_PUBLIC_USER)
+          [[ -z "${SELENOID_PUBLIC_PASSWORD:-}" ]] && missing+=(SELENOID_PUBLIC_PASSWORD)
+          if ((${#missing[@]})); then
+            echo "::error::Missing selenoid-production config: ${missing[*]}"
+            exit 1
+          fi
 
       - name: Resolve stack version and script ref
         id: meta
@@ -58,20 +72,29 @@ jobs:
           host: ${{ secrets.SELENOID_DEPLOY_HOST }}
           username: ${{ secrets.SELENOID_DEPLOY_USER }}
           key: ${{ secrets.SELENOID_DEPLOY_KEY }}
-          source: "deploy/deploy.sh,deploy/sync-nginx.sh,deploy/nginx-selenoid.conf,deploy/browsers-production.json,deploy/selenoid-hub.service,deploy/cleanup-videos.sh,deploy/video-retention.sh"
+          source: "deploy/deploy.sh,deploy/sync-nginx.sh,deploy/lib/require-public-auth.sh,deploy/nginx-selenoid.conf,deploy/browsers-production.json,deploy/selenoid-hub.service,deploy/cleanup-videos.sh,deploy/video-retention.sh"
           target: ".selenoid-deploy"
           strip_components: 1
           overwrite: true
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.5
+        env:
+          SELENOID_PUBLIC_USER: ${{ vars.SELENOID_PUBLIC_USER }}
+          SELENOID_PUBLIC_PASSWORD: ${{ secrets.SELENOID_PUBLIC_PASSWORD }}
         with:
           host: ${{ secrets.SELENOID_DEPLOY_HOST }}
           username: ${{ secrets.SELENOID_DEPLOY_USER }}
           key: ${{ secrets.SELENOID_DEPLOY_KEY }}
+          envs: SELENOID_PUBLIC_USER,SELENOID_PUBLIC_PASSWORD
           command_timeout: 20m
           script: |
             set -euo pipefail
+            if [[ -z "${SELENOID_PUBLIC_USER:-}" || -z "${SELENOID_PUBLIC_PASSWORD:-}" ]]; then
+              echo "SELENOID_PUBLIC_USER and SELENOID_PUBLIC_PASSWORD must be set for nginx sync" >&2
+              exit 1
+            fi
+            export SELENOID_PUBLIC_USER SELENOID_PUBLIC_PASSWORD
             TAG="${{ steps.meta.outputs.tag }}"
             if [[ -n "$TAG" ]]; then
               export SELENOID_VERSION="$TAG"
@@ -88,7 +111,11 @@ jobs:
             # sudoers paths are /tmp/* — install atomically from selenoid-owned staging.
             install -m 644 "$STAGING/nginx-selenoid.conf" /tmp/nginx-selenoid.conf
             install -m 755 "$STAGING/sync-nginx.sh" /tmp/sync-nginx.sh
+            install -d /tmp/lib
+            install -m 644 "$STAGING/lib/require-public-auth.sh" /tmp/lib/require-public-auth.sh
             install -m 644 "$STAGING/selenoid-hub.service" /tmp/selenoid-hub.service
+            install -d "${SELENOID_CONFIG_DIR}/lib" 2>/dev/null || true
+            install -m 644 "$STAGING/lib/require-public-auth.sh" "${SELENOID_CONFIG_DIR}/lib/require-public-auth.sh" 2>/dev/null || true
             install -m 755 "$STAGING/sync-nginx.sh" "${SELENOID_CONFIG_DIR}/bin/sync-nginx.sh" 2>/dev/null || true
             export NGINX_CONF_SRC=/tmp/nginx-selenoid.conf
             export NGINX_SYNC_SCRIPT=/tmp/sync-nginx.sh
@@ -104,8 +131,8 @@ jobs:
 
       - name: Smoke test (public)
         env:
-          SELENOID_USER: qa_engineer
-          SELENOID_PASSWORD: "aAb_-4gs53FD"
+          SELENOID_PUBLIC_USER: ${{ vars.SELENOID_PUBLIC_USER }}
+          SELENOID_PUBLIC_PASSWORD: ${{ secrets.SELENOID_PUBLIC_PASSWORD }}
           SELENOID_PUBLIC_URL: ${{ vars.SELENOID_PUBLIC_URL }}
           SELENOID_VERSION: ${{ steps.meta.outputs.tag || 'v3.0.6' }}
           SELENOID_UI_VERSION: ${{ steps.meta.outputs.ui_version }}
@@ -113,6 +140,10 @@ jobs:
           if [[ -z "${SELENOID_PUBLIC_URL:-}" ]]; then
             echo "SELENOID_PUBLIC_URL is not set — skip public smoke test" >&2
             exit 0
+          fi
+          if [[ -z "${SELENOID_PUBLIC_USER:-}" || -z "${SELENOID_PUBLIC_PASSWORD:-}" ]]; then
+            echo "::error::SELENOID_PUBLIC_USER and SELENOID_PUBLIC_PASSWORD required for smoke test"
+            exit 1
           fi
           chmod +x deploy/smoke-remote.sh
           ./deploy/smoke-remote.sh "$SELENOID_PUBLIC_URL"

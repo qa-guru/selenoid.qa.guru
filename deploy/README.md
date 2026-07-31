@@ -6,7 +6,7 @@
 |------|------------------|
 | `/` (UI) | `https://selenoid.qa.guru` |
 | `/wd/hub` | `https://selenoid.qa.guru/wd/hub` |
-| `/playwright/` | Create Session в UI или `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=qa_engineer%3AaAb_-4gs53FD&enableVNC=true&enableVideo=true` |
+| `/playwright/` | Create Session в UI или `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=<user>%3A<password>&enableVNC=true&enableVideo=true` |
 | `/status` | UI-shaped JSON (`.state`, `.version` = **selenoid-ui** stamp) |
 | `/hub/status` | raw hub capacity (total/used/browsers; без `.version`) |
 | `/wd/hub/status` | W3C hub status — **версия hub** в `.value.message` (basic auth) |
@@ -19,7 +19,7 @@
 | Назначение | URL |
 |------------|-----|
 | Selenium | `https://selenoid.qa.guru/wd/hub` |
-| Playwright (public) | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=qa_engineer%3AaAb_-4gs53FD&enableVNC=true&enableVideo=true` |
+| Playwright (public) | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=<SELENOID_PUBLIC_USER>%3A<SELENOID_PUBLIC_PASSWORD>&enableVNC=true&enableVideo=true` |
 | Playwright (students) | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=user1:1234&enableVNC=true&enableVideo=true` |
 | UI | `https://selenoid.qa.guru/` |
 | Status (UI) | `https://selenoid.qa.guru/status` — `.version` = UI, не hub |
@@ -38,8 +38,8 @@
 
 | API | students | public guest |
 |-----|----------|--------------|
-| WebDriver `/wd/hub` (Basic Auth) | `user1` / `1234` | `qa_engineer` / `aAb_-4gs53FD` |
-| Playwright `/playwright/` (query `accessKey`) | `user1:1234` | `qa_engineer:aAb_-4gs53FD` (`:` → `%3A` в URL) |
+| WebDriver `/wd/hub` (Basic Auth) | `user1` / `1234` | `$SELENOID_PUBLIC_USER` / `$SELENOID_PUBLIC_PASSWORD` |
+| Playwright `/playwright/` (query `accessKey`) | `user1:1234` | `$SELENOID_PUBLIC_USER:$SELENOID_PUBLIC_PASSWORD` (`:` → `%3A` в URL) |
 
 WebDriver — Basic Auth через `/etc/nginx/selenoid.htpasswd` (обоих пользователей заводит `sync-nginx.sh`). Playwright — `accessKey` в query (nginx map), т.к. браузерный WS не умеет Basic Auth. UI Create Session / сниппеты — build-time `hubAuth` (`VITE_HUB_ACCESS_KEY`), без runtime `-access-key` / `-playwright-access-key` и без `/ui/status.accessKey`.
 
@@ -47,7 +47,9 @@ WebDriver — Basic Auth через `/etc/nginx/selenoid.htpasswd` (обоих �
 
 ```bash
 export SELENOID_URL=https://selenoid.qa.guru/wd/hub
-export PW_TEST_CONNECT_WS_ENDPOINT='wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=qa_engineer%3AaAb_-4gs53FD&enableVNC=true&enableVideo=true'
+export SELENOID_PUBLIC_USER=qa_engineer
+export SELENOID_PUBLIC_PASSWORD='…'   # из vault / GitHub Environment secret, не из git
+export PW_TEST_CONNECT_WS_ENDPOINT="wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=${SELENOID_PUBLIC_USER}%3A${SELENOID_PUBLIC_PASSWORD}&enableVNC=true&enableVideo=true"
 export SELENOID_HOST=selenoid.qa.guru
 ```
 
@@ -62,30 +64,40 @@ Workflow [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) в [q
 | `workflow_dispatch` | **Ручной деплой** — Actions → deploy → Run workflow (версия стека и git ref опциональны) |
 | `repository_dispatch: deploy-selenoid` | Вызов из внешнего CI (payload: `version`, опционально `ref`) |
 
-### Secrets (Settings → Secrets → Actions в qa-guru/selenoid.qa.guru)
+### Secrets и variables (Environment `selenoid-production`)
 
-| Secret | Пример | Описание |
-|--------|--------|----------|
-| `SELENOID_DEPLOY_HOST` | `89.248.192.30` | SSH-хост (**IP Selectel Box1**, не CNAME — DNS может указывать на прокси) |
-| `SELENOID_DEPLOY_USER` | `selenoid` | **Оставить `selenoid`** (не `qaguru`) — пользователь в группе `docker` + NOPASSWD для `sync-nginx` / hub unit |
-| `SELENOID_DEPLOY_KEY` | ed25519 private key | Ключ только для Actions → `/home/selenoid/.ssh/authorized_keys` |
+| Name | Type | Описание |
+|------|------|----------|
+| `SELENOID_DEPLOY_HOST` | secret | SSH-хост (**IP Selectel Box1**, не CNAME) |
+| `SELENOID_DEPLOY_USER` | secret | **Оставить `selenoid`** — docker + NOPASSWD для `sync-nginx` / hub unit |
+| `SELENOID_DEPLOY_KEY` | secret | ed25519 private key → `/home/selenoid/.ssh/authorized_keys` |
+| `SELENOID_PUBLIC_PASSWORD` | secret | Пароль public guest для Basic Auth / Playwright `accessKey` |
 
-Ops с ноутбука — канон `qaguru` (`~/.ssh/qa_guru_ed25519`, Host `selenoid-prod`); deploy-процесс на хосте всё равно идёт от `selenoid` (`sudo -u selenoid` / GHA).
+| Name | Type | Default | Описание |
+|------|------|---------|----------|
+| `SELENOID_PUBLIC_USER` | variable | `qa_engineer` | Username public guest |
+| `SELENOID_CONFIG_DIR` | variable | `/opt/selenoid` | Каталог конфигурации на сервере |
+| `SELENOID_PUBLIC_URL` | variable | `https://selenoid.qa.guru` | URL для smoke test |
+| `SELENOID_PUBLIC_HOST` | variable | `selenoid.qa.guru` | Hostname для nginx-reload smoke |
 
-Workflow скачивает артефакты в `$HOME/.selenoid-deploy` (владелец `selenoid`), затем атомарно кладёт в `/tmp/*` под sudoers. Не curl’ить напрямую в `/tmp`, если файл уже принадлежит другому пользователю — будет `curl: (23)`.
+Без `SELENOID_PUBLIC_USER` / `SELENOID_PUBLIC_PASSWORD` workflow **deploy** и **nginx-reload** падают на fail-fast; `sync-nginx.sh` и `smoke-remote.sh` не имеют fallback literal values.
 
-Опционально — Variables:
+Ops с ноутбука — канон `qaguru` (`~/.ssh/qa_guru_ed25519`, Host `selenoid-prod`); deploy на хосте идёт от `selenoid` (`sudo -u selenoid` / GHA).
 
-| Variable | Default | Описание |
-|----------|---------|----------|
-| `SELENOID_CONFIG_DIR` | `/opt/selenoid` | Каталог конфигурации на сервере |
-| `SELENOID_PUBLIC_URL` | `https://selenoid.qa.guru` | URL для smoke test (не IP — иначе nginx отдаёт чужой cert) |
+Workflow скачивает артефакты в `$HOME/.selenoid-deploy`, затем атомарно кладёт в `/tmp/*` под sudoers.
 
-После настройки secrets: [Actions → deploy → Run workflow](https://github.com/qa-guru/selenoid.qa.guru/actions/workflows/deploy.yml) — обновит сервер до выбранной версии стека.
+После настройки Environment: [Actions → deploy → Run workflow](https://github.com/qa-guru/selenoid.qa.guru/actions/workflows/deploy.yml).
 
 ---
 
 ## Ручной деплой на сервере
+
+Перед `deploy.sh`, `sync-nginx.sh` или `smoke-remote.sh` экспортируйте public guest creds (из vault, не из git):
+
+```bash
+export SELENOID_PUBLIC_USER=qa_engineer
+export SELENOID_PUBLIC_PASSWORD='…'
+```
 
 ### Первый раз (bootstrap)
 
@@ -131,9 +143,9 @@ SELENOID_VERSION=v3.0.6 SELENOID_UI_VERSION=v3.0.16 CM_VERSION=v3.0.2 ./deploy/d
 ### Проверка
 
 ```bash
+export SELENOID_PUBLIC_USER=qa_engineer SELENOID_PUBLIC_PASSWORD='…'
 ./deploy/smoke-remote.sh https://selenoid.qa.guru
-# hub revision assertion (default EXPECTED_HUB_VERSION from SELENOID_VERSION):
-# curl -u qa_engineer:'aAb_-4gs53FD' -fsSL …/wd/hub/status | jq -r .value.message
+# hub revision: curl -u "${SELENOID_PUBLIC_USER}:${SELENOID_PUBLIC_PASSWORD}" -fsSL …/wd/hub/status | jq -r .value.message
 ```
 
 ---
@@ -165,8 +177,10 @@ SELENOID_VERSION=v3.0.6 SELENOID_UI_VERSION=v3.0.16 CM_VERSION=v3.0.2 ./deploy/d
 ```bash
 curl -fsSL https://raw.githubusercontent.com/qa-guru/selenoid.qa.guru/main/deploy/nginx-selenoid.conf -o /tmp/nginx-selenoid.conf
 curl -fsSL https://raw.githubusercontent.com/qa-guru/selenoid.qa.guru/main/deploy/sync-nginx.sh -o /opt/selenoid/bin/sync-nginx.sh
+curl -fsSL https://raw.githubusercontent.com/qa-guru/selenoid.qa.guru/main/deploy/lib/require-public-auth.sh -o /opt/selenoid/lib/require-public-auth.sh
 chmod +x /opt/selenoid/bin/sync-nginx.sh
-sudo NGINX_CONF_SRC=/tmp/nginx-selenoid.conf /opt/selenoid/bin/sync-nginx.sh
+sudo env SELENOID_PUBLIC_USER="$SELENOID_PUBLIC_USER" SELENOID_PUBLIC_PASSWORD="$SELENOID_PUBLIC_PASSWORD" \
+  NGINX_CONF_SRC=/tmp/nginx-selenoid.conf /opt/selenoid/bin/sync-nginx.sh
 ```
 
 После `bootstrap.sh` пользователь `selenoid` может вызывать `sync-nginx.sh` без пароля.

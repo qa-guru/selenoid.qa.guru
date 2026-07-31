@@ -12,30 +12,60 @@ jobs:
   nginx:
     runs-on: ubuntu-latest
     environment: selenoid-production
+    env:
+      SELENOID_PUBLIC_USER: ${{ vars.SELENOID_PUBLIC_USER }}
+      SELENOID_PUBLIC_PASSWORD: ${{ secrets.SELENOID_PUBLIC_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref }}
+
+      - name: Require production auth configuration
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -z "${SELENOID_PUBLIC_USER:-}" ]] && missing+=(SELENOID_PUBLIC_USER)
+          [[ -z "${SELENOID_PUBLIC_PASSWORD:-}" ]] && missing+=(SELENOID_PUBLIC_PASSWORD)
+          if ((${#missing[@]})); then
+            echo "::error::Missing selenoid-production config: ${missing[*]}"
+            exit 1
+          fi
+
       - uses: appleboy/ssh-action@v1.2.5
+        env:
+          SELENOID_PUBLIC_USER: ${{ vars.SELENOID_PUBLIC_USER }}
+          SELENOID_PUBLIC_PASSWORD: ${{ secrets.SELENOID_PUBLIC_PASSWORD }}
         with:
           host: ${{ secrets.SELENOID_DEPLOY_HOST }}
           username: ${{ secrets.SELENOID_DEPLOY_USER }}
           key: ${{ secrets.SELENOID_DEPLOY_KEY }}
+          envs: SELENOID_PUBLIC_USER,SELENOID_PUBLIC_PASSWORD
           script: |
             set -euxo pipefail
+            if [[ -z "${SELENOID_PUBLIC_USER:-}" || -z "${SELENOID_PUBLIC_PASSWORD:-}" ]]; then
+              echo "SELENOID_PUBLIC_USER and SELENOID_PUBLIC_PASSWORD must be set for nginx sync" >&2
+              exit 1
+            fi
             REPO="qa-guru/selenoid.qa.guru"
             REF="${{ inputs.ref }}"
             curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/nginx-selenoid.conf" -o /tmp/nginx-selenoid.conf
             curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/sync-nginx.sh" -o /tmp/sync-nginx.sh
+            mkdir -p /tmp/lib
+            curl -fsSL "https://raw.githubusercontent.com/${REPO}/${REF}/deploy/lib/require-public-auth.sh" -o /tmp/lib/require-public-auth.sh
             chmod +x /tmp/sync-nginx.sh
-            sudo NGINX_CONF_SRC=/tmp/nginx-selenoid.conf /tmp/sync-nginx.sh
+            sudo env \
+              NGINX_CONF_SRC=/tmp/nginx-selenoid.conf \
+              SELENOID_PUBLIC_USER="${SELENOID_PUBLIC_USER}" \
+              SELENOID_PUBLIC_PASSWORD="${SELENOID_PUBLIC_PASSWORD}" \
+              /tmp/sync-nginx.sh
 
             SERVERNAME="${{ vars.SELENOID_PUBLIC_HOST }}"
             SERVERNAME="${SERVERNAME:-selenoid.qa.guru}"
             BASE_URL="https://${SERVERNAME}"
+            AUTH="${SELENOID_PUBLIC_USER}:${SELENOID_PUBLIC_PASSWORD}"
 
             curl -fsSL "${BASE_URL}/status" >/dev/null
-            logs_code="$(curl -s -o /dev/null -w '%{http_code}' -u 'qa_engineer:aAb_-4gs53FD' "${BASE_URL}/logs/unknown-session")"
+            logs_code="$(curl -s -o /dev/null -w '%{http_code}' -u "${AUTH}" "${BASE_URL}/logs/unknown-session")"
             if [[ "$logs_code" != "400" ]]; then
               echo "FAIL: ${BASE_URL}/logs/unknown-session want HTTP 400, got ${logs_code}" >&2
               exit 1
@@ -45,12 +75,12 @@ jobs:
               echo "FAIL: ${BASE_URL}/logs/unknown-session without auth want HTTP 401, got ${logs_no_auth}" >&2
               exit 1
             fi
-            error_code="$(curl -s -o /dev/null -w '%{http_code}' -u 'qa_engineer:aAb_-4gs53FD' "${BASE_URL}/error")"
+            error_code="$(curl -s -o /dev/null -w '%{http_code}' -u "${AUTH}" "${BASE_URL}/error")"
             if [[ "$error_code" != "404" ]]; then
               echo "FAIL: ${BASE_URL}/error with auth want HTTP 404, got ${error_code}" >&2
               exit 1
             fi
-            vnc_code="$(curl -s -o /dev/null -w '%{http_code}' -u 'qa_engineer:aAb_-4gs53FD' "${BASE_URL}/vnc/unknown-session")"
+            vnc_code="$(curl -s -o /dev/null -w '%{http_code}' -u "${AUTH}" "${BASE_URL}/vnc/unknown-session")"
             if [[ "$vnc_code" != "400" ]]; then
               echo "FAIL: ${BASE_URL}/vnc/unknown-session with auth want HTTP 400, got ${vnc_code}" >&2
               exit 1

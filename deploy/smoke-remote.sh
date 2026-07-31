@@ -2,19 +2,28 @@
 # Post-deploy smoke checks against a public Selenoid base URL.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AUTH_LIB="${SCRIPT_DIR}/lib/require-public-auth.sh"
+if [[ ! -f "$AUTH_LIB" ]]; then
+  AUTH_LIB="${SCRIPT_DIR}/../lib/require-public-auth.sh"
+fi
+# shellcheck source=lib/require-public-auth.sh
+source "$AUTH_LIB"
+
 BASE_URL="${1:-${SELENOID_PUBLIC_URL:-}}"
 if [[ -z "$BASE_URL" ]]; then
   echo "Usage: $0 <base-url>  (or set SELENOID_PUBLIC_URL)" >&2
   exit 1
 fi
 BASE_URL="${BASE_URL%/}"
-SELENOID_USER="${SELENOID_USER:-qa_engineer}"
-SELENOID_PASSWORD="${SELENOID_PASSWORD:-aAb_-4gs53FD}"
+
+require_public_auth
+SELENOID_USER="$SELENOID_PUBLIC_USER"
+SELENOID_PASSWORD="$SELENOID_PUBLIC_PASSWORD"
 AUTH=(-u "${SELENOID_USER}:${SELENOID_PASSWORD}")
 # Guest tokens for nginx ?accessKey= checks (same user:pass as Basic Auth).
-PUBLIC_ACCESS_KEY_DEFAULT='qa_engineer:aAb_-4gs53FD'
+PUBLIC_ACCESS_KEY="$(public_access_key)"
 STUDENT_ACCESS_KEY="${STUDENT_ACCESS_KEY:-${PLAYWRIGHT_STUDENT_ACCESS_KEY:-user1:1234}}"
-PUBLIC_ACCESS_KEY="${PUBLIC_ACCESS_KEY:-${PLAYWRIGHT_PUBLIC_ACCESS_KEY:-$PUBLIC_ACCESS_KEY_DEFAULT}}"
 CURL_RETRIES="${CURL_RETRIES:-5}"
 CURL_RETRY_DELAY="${CURL_RETRY_DELAY:-3}"
 PLAYWRIGHT_SMOKE_TIMEOUT="${PLAYWRIGHT_SMOKE_TIMEOUT:-20}"

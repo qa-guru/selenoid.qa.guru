@@ -4,6 +4,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AUTH_LIB="${SCRIPT_DIR}/lib/require-public-auth.sh"
+if [[ ! -f "$AUTH_LIB" ]]; then
+  AUTH_LIB="${SCRIPT_DIR}/../lib/require-public-auth.sh"
+fi
+# shellcheck source=lib/require-public-auth.sh
+source "$AUTH_LIB"
 CONF_SRC="${NGINX_CONF_SRC:-${SCRIPT_DIR}/nginx-selenoid.conf}"
 SITE_NAME="${NGINX_SITE_NAME:-selenoid}"
 SITE_PATH="/etc/nginx/sites-available/${SITE_NAME}"
@@ -23,12 +29,14 @@ if [[ "$(id -u)" -ne 0 ]]; then
   exit 1
 fi
 
+require_public_auth
+
 HTPASSWD="/etc/nginx/selenoid.htpasswd"
-# Both WebDriver Basic Auth pairs: students (user1) + public guest (qa_engineer).
+# WebDriver Basic Auth: students (user1) + public guest (SELENOID_PUBLIC_* from env).
 STUDENT_USER="${SELENOID_STUDENT_USER:-user1}"
 STUDENT_PASSWORD="${SELENOID_STUDENT_PASSWORD:-1234}"
-PUBLIC_USER="${SELENOID_PUBLIC_USER:-qa_engineer}"
-PUBLIC_PASSWORD="${SELENOID_PUBLIC_PASSWORD:-aAb_-4gs53FD}"
+PUBLIC_USER="$SELENOID_PUBLIC_USER"
+PUBLIC_PASSWORD="$SELENOID_PUBLIC_PASSWORD"
 
 htpasswd_set() {
   local user="$1" password="$2"
@@ -56,6 +64,7 @@ chmod 640 "$HTPASSWD"
 chown root:www-data "$HTPASSWD" 2>/dev/null || chmod 644 "$HTPASSWD"
 
 cp "$CONF_SRC" "$TMP"
+patch_nginx_public_access_keys "$TMP"
 
 : >"$SSL_SNIPPET"
 if [[ -f "$SITE_PATH" ]]; then
