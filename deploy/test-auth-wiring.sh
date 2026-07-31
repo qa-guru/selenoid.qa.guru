@@ -34,9 +34,9 @@ export SELENOID_PUBLIC_PASSWORD='test-pass'
 # shellcheck source=lib/require-public-auth.sh
 source deploy/lib/require-public-auth.sh
 patch_nginx_public_access_keys "$TMP"
-rg -q 'test_user:test-pass' "$TMP"
-rg -q 'test_user%3Atest-pass' "$TMP"
-rg -q '__SELENOID_PUBLIC_ACCESS_KEY' "$TMP" && { echo "FAIL: placeholder left"; exit 1; }
+grep -q 'test_user:test-pass' "$TMP"
+grep -q 'test_user%3Atest-pass' "$TMP"
+grep -q '__SELENOID_PUBLIC_ACCESS_KEY' "$TMP" && { echo "FAIL: placeholder left"; exit 1; }
 rm -f "$TMP"
 echo "OK  placeholders replaced"
 
@@ -48,11 +48,11 @@ fi
 echo "OK  smoke-remote rejects missing URL"
 
 echo "=== tracked repo: no legacy public password literal ==="
-if rg -q 'aAb_' deploy/ .github/ README.md --glob '!deploy/test-auth-wiring.sh' 2>/dev/null; then
+if grep -R --exclude='test-auth-wiring.sh' -n 'aAb_' deploy/ .github/ README.md 2>/dev/null; then
   echo "FAIL: legacy password literal still in tracked files" >&2
-  rg -l 'aAb_' deploy/ .github/ README.md --glob '!deploy/test-auth-wiring.sh'
   exit 1
 fi
+
 echo "OK  no legacy password literal in deploy/workflows/docs"
 
 echo "All auth wiring checks passed."
