@@ -18,29 +18,26 @@ public_access_key() {
 }
 
 public_access_key_urlenc() {
-  python -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$(public_access_key)"
+  local key
+  key="$(public_access_key)"
+  printf '%s' "${key//:/%3A}"
 }
 
 patch_nginx_public_access_keys() {
   local conf_file="$1"
   require_public_auth
-  local key encoded_key
+  local key encoded_key tmp
   key="$(public_access_key)"
   encoded_key="$(public_access_key_urlenc)"
-  python - "$conf_file" "$key" "$encoded_key" <<'PY'
-import sys
-
-path, key, encoded = sys.argv[1:4]
-text = open(path, encoding="utf-8").read()
-replacements = {
-    "__SELENOID_PUBLIC_ACCESS_KEY__": key,
-    "__SELENOID_PUBLIC_ACCESS_KEY_URLENC__": encoded,
-}
-for placeholder, value in replacements.items():
-    if placeholder not in text:
-        print(f"Missing nginx placeholder {placeholder} in {path}", file=sys.stderr)
-        sys.exit(1)
-    text = text.replace(placeholder, value)
-open(path, "w", encoding="utf-8").write(text)
-PY
+  if ! grep -q '__SELENOID_PUBLIC_ACCESS_KEY__' "$conf_file"; then
+    echo "Missing nginx placeholder __SELENOID_PUBLIC_ACCESS_KEY__ in $conf_file" >&2
+    exit 1
+  fi
+  tmp="${conf_file}.patched"
+  awk -v key="$key" -v enc="$encoded_key" '{
+    gsub("__SELENOID_PUBLIC_ACCESS_KEY__", key)
+    gsub("__SELENOID_PUBLIC_ACCESS_KEY_URLENC__", enc)
+    print
+  }' "$conf_file" >"$tmp"
+  mv "$tmp" "$conf_file"
 }
