@@ -1,0 +1,80 @@
+# SonarQube — qa-guru/selenoid.qa.guru deploy/infra sources
+# Canon: docs/sonar/GITHUB-ACTIONS.md (monorepo) · projectKey: selenoid-qa-guru-deploy
+# Analysis only — does not change Box1 runtime deploy pins.
+
+name: sonar
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Install validators
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          npm install -g actionlint@1.7.7
+
+      - name: Validate shell / JSON / workflows
+        run: |
+          set -euo pipefail
+          mapfile -t shells < <(find deploy -type f -name '*.sh' | sort)
+          shellcheck -x "${shells[@]}"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for path in Path("deploy").rglob("*.json"):
+              json.loads(path.read_text(encoding="utf-8"))
+              print(f"json ok: {path}")
+          PY
+          actionlint .github/workflows/*.yml
+          # nginx config syntax is host-dependent; ensure template is non-empty and has server blocks
+          grep -q "server {" deploy/nginx-selenoid.conf
+          test -x deploy/test-auth-wiring.sh
+          bash deploy/test-auth-wiring.sh
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || 'https://sonar.qa.guru' }}
+        with:
+          projectBaseDir: .
+
+      - name: SonarQube Quality Gate
+        id: quality-gate
+        uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || 'https://sonar.qa.guru' }}
+        continue-on-error: ${{ vars.SONAR_REQUIRED != 'true' }}
+
+      - name: Fail job when gate required
+        if: vars.SONAR_REQUIRED == 'true' && steps.quality-gate.outcome == 'failure'
+        run: exit 1
+
+      - name: Job summary
+        if: always()
+        env:
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || 'https://sonar.qa.guru' }}
+        run: |
+          {
+            echo "## selenoid-qa-guru-deploy sonar"
+            echo ""
+            echo "- projectKey: \`selenoid-qa-guru-deploy\`"
+            echo "- dashboard: ${SONAR_HOST_URL%/}/dashboard?id=selenoid-qa-guru-deploy"
+            echo "- commit: \`${GITHUB_SHA:0:7}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
