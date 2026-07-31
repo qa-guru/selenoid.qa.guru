@@ -8,7 +8,7 @@ on:
         required: false
         default: ''
       ui_version:
-        description: 'selenoid-ui release tag (e.g. v3.0.18). Empty = v3.0.18 pin'
+        description: 'selenoid-ui release tag (e.g. v3.0.19). Empty = v3.0.19 pin'
         required: false
         default: ''
       ref:
@@ -51,16 +51,16 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
             ui="${{ inputs.ui_version }}"
-            echo "ui_version=${ui:-v3.0.18}" >> "$GITHUB_OUTPUT"
+            echo "ui_version=${ui:-v3.0.19}" >> "$GITHUB_OUTPUT"
             echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
           elif [[ -n "${{ github.event.client_payload.version }}" ]]; then
             echo "tag=${{ github.event.client_payload.version }}" >> "$GITHUB_OUTPUT"
             ui="${{ github.event.client_payload.ui_version }}"
-            echo "ui_version=${ui:-v3.0.18}" >> "$GITHUB_OUTPUT"
+            echo "ui_version=${ui:-v3.0.19}" >> "$GITHUB_OUTPUT"
             echo "ref=${{ github.event.client_payload.ref || 'main' }}" >> "$GITHUB_OUTPUT"
           else
             echo "tag=" >> "$GITHUB_OUTPUT"
-            echo "ui_version=v3.0.18" >> "$GITHUB_OUTPUT"
+            echo "ui_version=v3.0.19" >> "$GITHUB_OUTPUT"
             echo "ref=main" >> "$GITHUB_OUTPUT"
           fi
 
