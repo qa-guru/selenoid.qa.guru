@@ -42,10 +42,11 @@ jobs:
       - name: Push bake-time secrets to selenoid-ui
         run: |
           set -euo pipefail
+          # gh secret set reads the value from stdin when -b/--body is omitted.
           printf '%s' "${SELENOID_PUBLIC_USER}:${SELENOID_PUBLIC_PASSWORD}" \
-            | gh secret set HUB_ACCESS_KEY -R qa-guru/selenoid-ui --body-file -
+            | gh secret set HUB_ACCESS_KEY -R qa-guru/selenoid-ui
           printf '%s' "${SELENOID_PUBLIC_USER}" \
-            | gh secret set HUB_AUTH_USER -R qa-guru/selenoid-ui --body-file -
+            | gh secret set HUB_AUTH_USER -R qa-guru/selenoid-ui
           printf '%s' "${SELENOID_PUBLIC_PASSWORD}" \
-            | gh secret set HUB_AUTH_PASS -R qa-guru/selenoid-ui --body-file -
+            | gh secret set HUB_AUTH_PASS -R qa-guru/selenoid-ui
           echo "Updated HUB_ACCESS_KEY, HUB_AUTH_USER, HUB_AUTH_PASS on qa-guru/selenoid-ui"
