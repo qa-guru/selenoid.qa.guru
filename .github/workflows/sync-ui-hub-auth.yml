@@ -1,0 +1,51 @@
+# One-shot / ops: copy selenoid-production public guest creds into
+# qa-guru/selenoid-ui bake-time secrets (HUB_ACCESS_KEY + HUB_AUTH_*).
+#
+# Requires env secret SECRETS_SYNC_TOKEN — PAT/gh token with `repo` on selenoid-ui
+# (admin to set secrets). Remove SECRETS_SYNC_TOKEN after the run.
+
+name: sync-ui-hub-auth
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    environment: selenoid-production
+    env:
+      SELENOID_PUBLIC_USER: ${{ vars.SELENOID_PUBLIC_USER }}
+      SELENOID_PUBLIC_PASSWORD: ${{ secrets.SELENOID_PUBLIC_PASSWORD }}
+      GH_TOKEN: ${{ secrets.SECRETS_SYNC_TOKEN }}
+    steps:
+      - name: Require sync inputs
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -z "${SELENOID_PUBLIC_USER:-}" ]] && missing+=(SELENOID_PUBLIC_USER)
+          [[ -z "${SELENOID_PUBLIC_PASSWORD:-}" ]] && missing+=(SELENOID_PUBLIC_PASSWORD)
+          [[ -z "${GH_TOKEN:-}" ]] && missing+=(SECRETS_SYNC_TOKEN)
+          if ((${#missing[@]})); then
+            echo "::error::Missing: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Verify public guest against prod hub
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            -u "${SELENOID_PUBLIC_USER}:${SELENOID_PUBLIC_PASSWORD}" \
+            https://selenoid.qa.guru/wd/hub/status)
+          echo "hub status HTTP ${code}"
+          [[ "$code" == "200" ]]
+
+      - name: Push bake-time secrets to selenoid-ui
+        run: |
+          set -euo pipefail
+          printf '%s' "${SELENOID_PUBLIC_USER}:${SELENOID_PUBLIC_PASSWORD}" \
+            | gh secret set HUB_ACCESS_KEY -R qa-guru/selenoid-ui --body-file -
+          printf '%s' "${SELENOID_PUBLIC_USER}" \
+            | gh secret set HUB_AUTH_USER -R qa-guru/selenoid-ui --body-file -
+          printf '%s' "${SELENOID_PUBLIC_PASSWORD}" \
+            | gh secret set HUB_AUTH_PASS -R qa-guru/selenoid-ui --body-file -
+          echo "Updated HUB_ACCESS_KEY, HUB_AUTH_USER, HUB_AUTH_PASS on qa-guru/selenoid-ui"
