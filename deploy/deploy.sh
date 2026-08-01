@@ -14,6 +14,10 @@ VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
 # Must match deploy/selenoid-hub.service (-warm-pool-url). Empty disables.
 WARM_POOL_URL="${SELENOID_WARM_POOL_URL:-http://127.0.0.1:9090}"
 GITHUB_OWNER="${GITHUB_OWNER:-qa-guru}"
+# never | auto | always — auto skips pull when browsers.json sha256 unchanged.
+PULL_BROWSERS="${PULL_BROWSERS:-auto}"
+# 1/true skips chrome/firefox/msedge session smoke in deploy.sh (public smoke stays in GHA).
+SKIP_INLINE_BROWSER_SMOKE="${SKIP_INLINE_BROWSER_SMOKE:-0}"
 version_args=()
 if [[ -n "$VERSION" ]]; then
   version_args=(-v "$VERSION")
@@ -56,6 +60,49 @@ download_binary() {
   mv "$tmp" "$dest"
 }
 
+download_binary_if_needed() {
+  local repo="$1" dest="$2" tag="${3:-${VERSION:-latest}}"
+  if [[ -x "$dest" ]]; then
+    local reported=""
+    reported="$("$dest" -version 2>/dev/null | head -1 || true)"
+    if [[ -n "$reported" && ( "$reported" == *"${tag}"* || "$reported" == *"${tag#v}"* ) ]]; then
+      echo "skip download: ${repo} ${tag} already present (${reported})"
+      return 0
+    fi
+  fi
+  download_binary "$repo" "$dest" "$tag"
+}
+
+should_pull_image() {
+  local img="$1"
+  case "${PULL_BROWSERS}" in
+    always|1|true|yes)
+      return 0
+      ;;
+    never|0|false|no)
+      echo "skip pull (PULL_BROWSERS=${PULL_BROWSERS}): ${img}"
+      return 1
+      ;;
+    auto|*)
+      if docker image inspect "$img" >/dev/null 2>&1; then
+        echo "skip pull (local image present, PULL_BROWSERS=auto): ${img}"
+        return 1
+      fi
+      return 0
+      ;;
+  esac
+}
+
+pull_image_if_needed() {
+  local img="$1"
+  [[ -z "$img" ]] && return 0
+  if should_pull_image "$img"; then
+    echo "--- docker pull ${img} ---"
+    docker pull "$img"
+    docker image inspect "$img" --format '{{.RepoTags}} {{.Id}} {{.Created}}' 2>/dev/null || true
+  fi
+}
+
 echo "=== stop legacy containers ==="
 # Never stop warm-pool compose (selenoid-warm-pool / warm-chrome-*).
 # That stack is independent SSOT under /home/qaguru/selenoid-warm-pool/.
@@ -75,8 +122,8 @@ if pgrep -f "${CONFIG_DIR}/bin/selenoid" >/dev/null 2>&1; then
 fi
 
 echo "=== download hub binaries (selenoid ${VERSION:-latest}, selenoid-ui ${UI_VERSION:-latest}) ==="
-download_binary selenoid "$CONFIG_DIR/bin/selenoid" "$VERSION"
-download_binary selenoid-ui "$CONFIG_DIR/bin/selenoid-ui" "$UI_VERSION"
+download_binary_if_needed selenoid "$CONFIG_DIR/bin/selenoid" "$VERSION"
+download_binary_if_needed selenoid-ui "$CONFIG_DIR/bin/selenoid-ui" "$UI_VERSION"
 
 echo "=== configure hub (browsers.json + pull images) ==="
 BROWSERS_PRODUCTION="${BROWSERS_PRODUCTION:-/tmp/browsers-production.json}"
@@ -87,21 +134,32 @@ else
   "$CM_BIN" selenoid configure -c "$CONFIG_DIR" -f "${version_args[@]}"
 fi
 
-echo "=== pull all browser images from browsers.json (always refresh tags) ==="
-pull_images() {
-  if command -v jq >/dev/null 2>&1; then
-    jq -r '.. | objects | select(has("image")) | .image' "$CONFIG_DIR/browsers.json" | sort -u
-  else
-    grep -oE '"image": "[^"]+"' "$CONFIG_DIR/browsers.json" | cut -d'"' -f4 | sort -u
+echo "=== pull browser images from browsers.json (PULL_BROWSERS=${PULL_BROWSERS}) ==="
+PULL_STATE="${CONFIG_DIR}/.deploy-browsers-sha256"
+browsers_sha=""
+if command -v sha256sum >/dev/null 2>&1; then
+  browsers_sha="$(sha256sum "$CONFIG_DIR/browsers.json" | awk '{print $1}')"
+elif command -v shasum >/dev/null 2>&1; then
+  browsers_sha="$(shasum -a 256 "$CONFIG_DIR/browsers.json" | awk '{print $1}')"
+fi
+if [[ "${PULL_BROWSERS}" == "auto" && -n "$browsers_sha" && -f "$PULL_STATE" && "$(cat "$PULL_STATE")" == "$browsers_sha" ]]; then
+  echo "browsers.json unchanged — skip all browser image pulls"
+else
+  pull_images() {
+    if command -v jq >/dev/null 2>&1; then
+      jq -r '.. | objects | select(has("image")) | .image' "$CONFIG_DIR/browsers.json" | sort -u
+    else
+      grep -oE '"image": "[^"]+"' "$CONFIG_DIR/browsers.json" | cut -d'"' -f4 | sort -u
+    fi
+  }
+  while read -r img; do
+    pull_image_if_needed "$img"
+  done < <(pull_images)
+  pull_image_if_needed "${VIDEO_RECORDER_IMAGE}"
+  if [[ -n "$browsers_sha" ]]; then
+    echo "$browsers_sha" > "$PULL_STATE"
   fi
-}
-while read -r img; do
-  [[ -z "$img" ]] && continue
-  echo "--- docker pull ${img} ---"
-  docker pull "$img"
-  docker image inspect "$img" --format '{{.RepoTags}} {{.Id}} {{.Created}}' 2>/dev/null || true
-done < <(pull_images)
-docker pull "${VIDEO_RECORDER_IMAGE}"
+fi
 
 mkdir -p "$CONFIG_DIR/video" "$CONFIG_DIR/logs" "$CONFIG_DIR/har"
 
@@ -317,6 +375,9 @@ else
 fi
 echo
 
+if [[ "${SKIP_INLINE_BROWSER_SMOKE}" == "1" || "${SKIP_INLINE_BROWSER_SMOKE}" == "true" || "${SKIP_INLINE_BROWSER_SMOKE}" == "yes" ]]; then
+  echo "=== skip inline WebDriver session smoke (SKIP_INLINE_BROWSER_SMOKE=${SKIP_INLINE_BROWSER_SMOKE}) ==="
+else
 echo "=== smoke: create chrome session ==="
 session_json="$(curl -sS -m 120 -X POST "http://127.0.0.1:4444/wd/hub/session" \
   -H 'Content-Type: application/json' \
@@ -383,6 +444,7 @@ if command -v jq >/dev/null; then
   curl -sS -X DELETE "http://127.0.0.1:4444/wd/hub/session/${session_id}" >/dev/null || true
 else
   echo "$session_json"
+fi
 fi
 echo
 docker ps --filter name=selenoid --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
