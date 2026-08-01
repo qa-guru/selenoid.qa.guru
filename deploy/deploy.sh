@@ -6,10 +6,13 @@ set -euo pipefail
 CONFIG_DIR="${SELENOID_CONFIG_DIR:-/opt/selenoid}"
 CM_BIN="${CM_BIN:-$HOME/cm}"
 CM_URL="${CM_URL:-https://github.com/qa-guru/cm/releases/latest/download/cm_linux_amd64}"
-VERSION="${SELENOID_VERSION:-v3.0.6}"
+VERSION="${SELENOID_VERSION:-v3.0.7}"
 UI_VERSION="${SELENOID_UI_VERSION:-v3.0.23}"
 CM_VERSION="${CM_VERSION:-v3.0.2}"
 VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
+# Box1 warm-pool orchestrator (docker-compose.hub.yml → 127.0.0.1:9090).
+# Must match deploy/selenoid-hub.service (-warm-pool-url). Empty disables.
+WARM_POOL_URL="${SELENOID_WARM_POOL_URL:-http://127.0.0.1:9090}"
 GITHUB_OWNER="${GITHUB_OWNER:-qa-guru}"
 version_args=()
 if [[ -n "$VERSION" ]]; then
@@ -54,6 +57,8 @@ download_binary() {
 }
 
 echo "=== stop legacy containers ==="
+# Never stop warm-pool compose (selenoid-warm-pool / warm-chrome-*).
+# That stack is independent SSOT under /home/qaguru/selenoid-warm-pool/.
 docker stop selenoid selenoid-ui 2>/dev/null || true
 docker rm selenoid selenoid-ui 2>/dev/null || true
 
@@ -127,6 +132,8 @@ unset DOCKER_API_VERSION || true
 docker stop selenoid 2>/dev/null || true
 docker rm selenoid 2>/dev/null || true
 
+# Unit SSOT for warm flag: projects/selenoid-home/selenoid-warm-pool/deploy/selenoid-hub.service
+# (synced into this repo as deploy/selenoid-hub.service — must keep -warm-pool-url).
 HUB_UNIT_SRC="${HUB_UNIT_SRC:-${SCRIPT_DIR}/selenoid-hub.service}"
 if [[ ! -f "$HUB_UNIT_SRC" && -f /tmp/selenoid-hub.service ]]; then
   HUB_UNIT_SRC=/tmp/selenoid-hub.service
@@ -140,6 +147,10 @@ if [[ -f "$HUB_UNIT_SRC" ]]; then
       -e '/-access-key=/d' \
       "$HUB_UNIT_SRC" >"$HUB_UNIT_RENDER"
   HUB_UNIT_SRC="$HUB_UNIT_RENDER"
+  if [[ -n "$WARM_POOL_URL" ]] && ! grep -q -- '-warm-pool-url' "$HUB_UNIT_SRC"; then
+    echo "FAIL: hub unit missing -warm-pool-url (WARM_POOL_URL=${WARM_POOL_URL}). Sync from selenoid-warm-pool/deploy/selenoid-hub.service" >&2
+    exit 1
+  fi
 fi
 HUB_UNIT_DEST="/etc/systemd/system/selenoid-hub.service"
 hub_via_systemd=false
@@ -171,6 +182,10 @@ fi
 if [[ "$hub_via_systemd" != true ]]; then
   echo "--- start hub via nohup (no reboot autostart; install selenoid-hub.service for that) ---" >&2
   pkill -f "${CONFIG_DIR}/bin/selenoid" 2>/dev/null || true
+  warm_args=()
+  if [[ -n "$WARM_POOL_URL" ]]; then
+    warm_args=(-warm-pool-url "$WARM_POOL_URL")
+  fi
   nohup "${CONFIG_DIR}/bin/selenoid" \
     -conf "${CONFIG_DIR}/browsers.json" \
     -limit 25 \
@@ -179,6 +194,9 @@ if [[ "$hub_via_systemd" != true ]]; then
     -video-recorder-image "${VIDEO_RECORDER_IMAGE}" \
     -log-output-dir "${CONFIG_DIR}/logs/" \
     -har-output-dir "${CONFIG_DIR}/har/" \
+    -service-startup-timeout 10m \
+    -session-attempt-timeout 5m \
+    "${warm_args[@]}" \
     -listen :4444 \
     >> "${CONFIG_DIR}/logs/selenoid.log" 2>&1 &
 fi
@@ -190,6 +208,29 @@ for attempt in 1 2 3 4 5 6 7 8 9 10; do
   echo "hub /status not ready (attempt ${attempt}/10)..." >&2
   sleep 2
 done
+
+# Warm metrics: hub v3.0.7+ with -warm-pool-url; orchestrator must stay up (compose hub).
+if [[ -n "$WARM_POOL_URL" ]] && command -v jq >/dev/null; then
+  echo "=== warm-pool metrics (expect warmReady/warmTotal) ==="
+  warm_ok=false
+  for attempt in 1 2 3 4 5 6 7 8 9 10; do
+    hub_status="$(curl -sf "http://127.0.0.1:4444/status" || true)"
+    if [[ -n "$hub_status" ]] && jq -e '(.warmTotal | type == "number") and (.warmTotal > 0)' <<<"$hub_status" >/dev/null 2>&1; then
+      echo "$hub_status" | jq '{warmReady,warmTotal,used,total}'
+      warm_ok=true
+      break
+    fi
+    echo "warm metrics not ready (attempt ${attempt}/10)..." >&2
+    sleep 2
+  done
+  if [[ "$warm_ok" != true ]]; then
+    echo "FAIL: /status missing warmReady/warmTotal>0 — check hub -warm-pool-url and curl ${WARM_POOL_URL}/health" >&2
+    curl -sf "${WARM_POOL_URL}/health" || curl -sf "${WARM_POOL_URL}/" || true
+    ps aux | grep '[/]opt/selenoid/bin/selenoid' || true
+    grep -E 'warm-pool|ExecStart' /etc/systemd/system/selenoid-hub.service 2>/dev/null || true
+    exit 1
+  fi
+fi
 
 echo "=== start UI (host network -> 127.0.0.1:4444) ==="
 "$CM_BIN" selenoid-ui download -c "$CONFIG_DIR" "${version_args[@]}" 2>/dev/null || true

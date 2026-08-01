@@ -88,6 +88,28 @@ else
   exit 1
 fi
 
+# Box1 warm-pool: hub -warm-pool-url → warmReady/warmTotal for UI WARM tile.
+# Skip with EXPECT_WARM_METRICS=0 (non-prod / no orchestrator).
+EXPECT_WARM_METRICS="${EXPECT_WARM_METRICS:-1}"
+EXPECTED_WARM_TOTAL="${EXPECTED_WARM_TOTAL:-2}"
+if [[ "$EXPECT_WARM_METRICS" != "0" ]]; then
+  echo "=== warm-pool metrics (warmReady/warmTotal) ==="
+  echo "$status_json" | jq '{warmReady,warmTotal,used,total}'
+  if ! jq -e --argjson n "$EXPECTED_WARM_TOTAL" \
+      '(.warmTotal | type == "number") and (.warmTotal >= $n) and (.warmReady | type == "number")' \
+      <<<"$status_json" >/dev/null; then
+    echo "FAIL /status must expose warmReady/warmTotal>=${EXPECTED_WARM_TOTAL} (hub -warm-pool-url + live orchestrator)" >&2
+    exit 1
+  fi
+  if ! jq -e --argjson n "$EXPECTED_WARM_TOTAL" \
+      '(.state.warmTotal | type == "number") and (.state.warmTotal >= $n)' \
+      <<<"$ui_status_json" >/dev/null; then
+    echo "FAIL /ui/status.state must expose warmTotal>=${EXPECTED_WARM_TOTAL} for UI WARM tile" >&2
+    exit 1
+  fi
+  echo "OK  warmReady/warmTotal present (hub + UI feed)"
+fi
+
 echo "=== browser versions ==="
 for pair in "chrome:149.0" "firefox:151.0" "msedge:145.0" "playwright-chromium:1.61.1" "playwright-chrome:1.61.1" "playwright-msedge:1.61.1"; do
   browser="${pair%%:*}"
