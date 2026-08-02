@@ -17,7 +17,7 @@ Production-деплой публичного Selenoid: **https://selenoid.qa.gur
 | Действие | Как |
 |----------|-----|
 | **Ручной деплой** | GitHub → Actions → [deploy](https://github.com/qa-guru/selenoid.qa.guru/actions/workflows/deploy.yml) → Run workflow |
-| **Post-deploy prod smoke** | Actions → [trigger-deploy-smoke](https://github.com/qa-guru/selenoid.qa.guru/actions/workflows/trigger-deploy-smoke.yml) (async → [selenoid-tests](https://github.com/qa-guru/selenoid-tests) `deploy-smoke`, profile `selenoid_qa_guru_api`) |
+| **Post-deploy prod smoke** | **Этот репо — owner:** `deploy.yml` → job `deploy-smoke` → [selenoid-tests](https://github.com/qa-guru/selenoid-tests) (`api,smoke`, `selenoid_qa_guru_api`, callback 35m). Release hub/UI только ждут pin (`wait_only`) — без второго dispatch. |
 | **Перезагрузка nginx** | Actions → [nginx-reload](https://github.com/qa-guru/selenoid.qa.guru/actions/workflows/nginx-reload.yml) |
 | **Деплой на сервере** | `./deploy/deploy.sh` (из клона этого репозитория) |
 | **Smoke test** | `./deploy/smoke-remote.sh https://selenoid.qa.guru` |

@@ -192,6 +192,7 @@ jobs:
           chmod +x deploy/smoke-remote.sh
           ./deploy/smoke-remote.sh "$SELENOID_PUBLIC_URL"
 
+  # Sole owner of post-deploy prod Go smoke (release repos use wait_only pin gate).
   deploy-smoke:
     name: Deploy smoke → selenoid-tests
     needs: deploy
@@ -207,4 +208,5 @@ jobs:
       env_profile: selenoid_qa_guru_api
       source_version: ${{ needs.deploy.outputs.smoke_source_version }}
       source_ref: main
-      summary_title: Deploy smoke → selenoid-tests (Go hub-prod dispatch)
+      summary_title: Deploy smoke → selenoid-tests (owner · Go hub-prod)
+      callback_timeout_minutes: 35

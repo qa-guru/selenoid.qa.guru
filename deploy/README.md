@@ -64,6 +64,9 @@ Workflow [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) в [q
 | `workflow_dispatch` | **Ручной деплой** — Actions → deploy → Run workflow (версия стека и git ref опциональны) |
 | `repository_dispatch: deploy-selenoid` | Вызов из внешнего CI (payload: `version`, опционально `ref`) |
 
+**Prod Go smoke owner:** этот workflow (`deploy-smoke` → `api,smoke`, callback 35m).  
+`selenoid` / `selenoid-ui` release после `deploy-prod-dispatch` только ждут pin (`wait_only`) — второй `deploy-smoke` не шлют (иначе дубль под `prod-smoke-gate`).
+
 ### Secrets и variables (Environment `selenoid-production`)
 
 | Name | Type | Описание |
