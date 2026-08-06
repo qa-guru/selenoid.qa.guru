@@ -363,6 +363,17 @@
         "mem": "2g",
         "cpu": "2.0"
       },
+      "8.0": {
+        "image": "qaguru/android:8",
+        "port": "4444",
+        "path": "/wd/hub",
+        "shmSize": 2147483648,
+        "mem": "6g",
+        "cpu": "4.0",
+        "env": [
+          "SCREEN_RESOLUTION=2100x2100x24"
+        ]
+      },
       "10.0": {
         "image": "qaguru/android:10",
         "port": "4444",
