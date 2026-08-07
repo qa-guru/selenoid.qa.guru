@@ -37,6 +37,10 @@ STUDENT_USER="${SELENOID_STUDENT_USER:-user1}"
 STUDENT_PASSWORD="${SELENOID_STUDENT_PASSWORD:-1234}"
 PUBLIC_USER="$SELENOID_PUBLIC_USER"
 PUBLIC_PASSWORD="$SELENOID_PUBLIC_PASSWORD"
+# Optional account for one CI consumer, so a pipeline never carries the public guest
+# credential that is published to students and can be revoked on its own.
+CI_USER="${SELENOID_CI_USER:-}"
+CI_PASSWORD="${SELENOID_CI_PASSWORD:-}"
 
 htpasswd_set() {
   local user="$1" password="$2"
@@ -60,6 +64,9 @@ htpasswd_set() {
 
 htpasswd_set "$STUDENT_USER" "$STUDENT_PASSWORD"
 htpasswd_set "$PUBLIC_USER" "$PUBLIC_PASSWORD"
+if [[ -n "$CI_USER" && -n "$CI_PASSWORD" ]]; then
+  htpasswd_set "$CI_USER" "$CI_PASSWORD"
+fi
 chmod 640 "$HTPASSWD"
 chown root:www-data "$HTPASSWD" 2>/dev/null || chmod 644 "$HTPASSWD"
 

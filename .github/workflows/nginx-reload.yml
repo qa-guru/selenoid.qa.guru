@@ -46,11 +46,13 @@ jobs:
         env:
           SELENOID_PUBLIC_USER: ${{ vars.SELENOID_PUBLIC_USER }}
           SELENOID_PUBLIC_PASSWORD: ${{ secrets.SELENOID_PUBLIC_PASSWORD }}
+          SELENOID_CI_USER: ${{ vars.SELENOID_CI_USER }}
+          SELENOID_CI_PASSWORD: ${{ secrets.SELENOID_CI_PASSWORD }}
         with:
           host: ${{ secrets.SELENOID_DEPLOY_HOST }}
           username: ${{ secrets.SELENOID_DEPLOY_USER }}
           key: ${{ secrets.SELENOID_DEPLOY_KEY }}
-          envs: SELENOID_PUBLIC_USER,SELENOID_PUBLIC_PASSWORD
+          envs: SELENOID_PUBLIC_USER,SELENOID_PUBLIC_PASSWORD,SELENOID_CI_USER,SELENOID_CI_PASSWORD
           script: |
             set -euxo pipefail
             if [[ -z "${SELENOID_PUBLIC_USER:-}" || -z "${SELENOID_PUBLIC_PASSWORD:-}" ]]; then
@@ -66,6 +68,8 @@ jobs:
               NGINX_CONF_SRC=/tmp/nginx-selenoid.conf \
               SELENOID_PUBLIC_USER="${SELENOID_PUBLIC_USER}" \
               SELENOID_PUBLIC_PASSWORD="${SELENOID_PUBLIC_PASSWORD}" \
+              SELENOID_CI_USER="${SELENOID_CI_USER:-}" \
+              SELENOID_CI_PASSWORD="${SELENOID_CI_PASSWORD:-}" \
               /tmp/sync-nginx.sh
 
             SERVERNAME="${{ vars.SELENOID_PUBLIC_HOST }}"

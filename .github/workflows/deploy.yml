@@ -123,11 +123,13 @@ jobs:
         env:
           SELENOID_PUBLIC_USER: ${{ vars.SELENOID_PUBLIC_USER }}
           SELENOID_PUBLIC_PASSWORD: ${{ secrets.SELENOID_PUBLIC_PASSWORD }}
+          SELENOID_CI_USER: ${{ vars.SELENOID_CI_USER }}
+          SELENOID_CI_PASSWORD: ${{ secrets.SELENOID_CI_PASSWORD }}
         with:
           host: ${{ secrets.SELENOID_DEPLOY_HOST }}
           username: ${{ secrets.SELENOID_DEPLOY_USER }}
           key: ${{ secrets.SELENOID_DEPLOY_KEY }}
-          envs: SELENOID_PUBLIC_USER,SELENOID_PUBLIC_PASSWORD
+          envs: SELENOID_PUBLIC_USER,SELENOID_PUBLIC_PASSWORD,SELENOID_CI_USER,SELENOID_CI_PASSWORD
           command_timeout: 20m
           script: |
             set -euo pipefail
@@ -136,6 +138,9 @@ jobs:
               exit 1
             fi
             export SELENOID_PUBLIC_USER SELENOID_PUBLIC_PASSWORD
+            # Optional per-consumer CI account; a host without it keeps the two base users.
+            export SELENOID_CI_USER="${SELENOID_CI_USER:-}"
+            export SELENOID_CI_PASSWORD="${SELENOID_CI_PASSWORD:-}"
             TAG="${{ steps.meta.outputs.hub_version }}"
             if [[ -n "$TAG" ]]; then
               export SELENOID_VERSION="$TAG"

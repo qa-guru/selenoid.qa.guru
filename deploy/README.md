@@ -41,7 +41,13 @@
 | WebDriver `/wd/hub` (Basic Auth) | `user1` / `1234` | `$SELENOID_PUBLIC_USER` / `$SELENOID_PUBLIC_PASSWORD` |
 | Playwright `/playwright/` (query `accessKey`) | `user1:1234` | `$SELENOID_PUBLIC_USER:$SELENOID_PUBLIC_PASSWORD` (`:` → `%3A` в URL) |
 
-WebDriver — Basic Auth через `/etc/nginx/selenoid.htpasswd` (обоих пользователей заводит `sync-nginx.sh`). Playwright — `accessKey` в query (nginx map), т.к. браузерный WS не умеет Basic Auth. UI Create Session / сниппеты — build-time `hubAuth` (`VITE_HUB_ACCESS_KEY`), без runtime `-access-key` / `-playwright-access-key` и без `/ui/status.accessKey`.
+**CI-аккаунты.** Public guest опубликован студентам (Telegram-посты, `examples/`, `generators/ethalon/`),
+поэтому его нельзя ротировать под один пайплайн. Для конкретного CI заводится отдельный пользователь
+через опциональные `SELENOID_CI_USER` / `SELENOID_CI_PASSWORD` — его можно ротировать и отзывать,
+не задев ни студентов, ни guest. Сейчас так живёт `reference-app-copy-ci`
+(secret `SELENOID_REMOTE_URL` в [autotests-ai/reference-app-copy](https://github.com/autotests-ai/reference-app-copy)).
+
+WebDriver — Basic Auth через `/etc/nginx/selenoid.htpasswd` (всех пользователей заводит `sync-nginx.sh`). Playwright — `accessKey` в query (nginx map), т.к. браузерный WS не умеет Basic Auth. UI Create Session / сниппеты — build-time `hubAuth` (`VITE_HUB_ACCESS_KEY`), без runtime `-access-key` / `-playwright-access-key` и без `/ui/status.accessKey`.
 
 ### Переменные для тестов
 
