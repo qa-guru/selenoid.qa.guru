@@ -94,7 +94,7 @@ jobs:
           fi
           smoke_source="${hub:-${ui}}"
           if [[ -z "${smoke_source}" ]]; then
-            smoke_source="v3.0.8"
+            smoke_source="v3.0.9"
           fi
           {
             echo "hub_version=${hub}"
@@ -169,7 +169,7 @@ jobs:
             export BROWSERS_PRODUCTION="$STAGING/browsers-production.json"
             export HUB_UNIT_SRC=/tmp/selenoid-hub.service
             export CM_VERSION=v3.0.2
-            export GIT_REVISION="${GIT_REVISION:-v3.0.8}"
+            export GIT_REVISION="${GIT_REVISION:-v3.0.9}"
             export SELENOID_WARM_POOL_URL="${SELENOID_WARM_POOL_URL:-http://127.0.0.1:9090}"
             echo "Deploy pins: SELENOID_VERSION=${SELENOID_VERSION:-default} SELENOID_UI_VERSION=${SELENOID_UI_VERSION} PULL_BROWSERS=${PULL_BROWSERS} SKIP_INLINE_BROWSER_SMOKE=${SKIP_INLINE_BROWSER_SMOKE}"
             grep -q download_binary "$STAGING/deploy.sh"
@@ -181,7 +181,7 @@ jobs:
           SELENOID_PUBLIC_USER: ${{ vars.SELENOID_PUBLIC_USER }}
           SELENOID_PUBLIC_PASSWORD: ${{ secrets.SELENOID_PUBLIC_PASSWORD }}
           SELENOID_PUBLIC_URL: ${{ vars.SELENOID_PUBLIC_URL }}
-          SELENOID_VERSION: ${{ steps.meta.outputs.hub_version || 'v3.0.8' }}
+          SELENOID_VERSION: ${{ steps.meta.outputs.hub_version || 'v3.0.9' }}
           SELENOID_UI_VERSION: ${{ steps.meta.outputs.ui_version }}
           EXPECT_WARM_METRICS: '1'
           EXPECTED_WARM_TOTAL: '2'
