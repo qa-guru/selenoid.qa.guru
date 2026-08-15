@@ -6,8 +6,8 @@ set -euo pipefail
 CONFIG_DIR="${SELENOID_CONFIG_DIR:-/opt/selenoid}"
 CM_BIN="${CM_BIN:-$HOME/cm}"
 CM_URL="${CM_URL:-https://github.com/qa-guru/cm/releases/latest/download/cm_linux_amd64}"
-VERSION="${SELENOID_VERSION:-v3.0.9}"
-UI_VERSION="${SELENOID_UI_VERSION:-v3.0.29}"
+VERSION="${SELENOID_VERSION:-v3.0.11}"
+UI_VERSION="${SELENOID_UI_VERSION:-v3.0.32}"
 CM_VERSION="${CM_VERSION:-v3.0.2}"
 VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
 # Box1 warm-pool orchestrator (docker-compose.hub.yml → 127.0.0.1:9090).
@@ -269,12 +269,14 @@ done
 
 # Warm metrics: hub v3.0.7+ with -warm-pool-url; orchestrator must stay up (compose hub).
 if [[ -n "$WARM_POOL_URL" ]] && command -v jq >/dev/null; then
-  echo "=== warm-pool metrics (expect warmReady/warmTotal) ==="
+  echo "=== warm-pool metrics (expect warm 4/4 + hot 2/2) ==="
   warm_ok=false
   for attempt in 1 2 3 4 5 6 7 8 9 10; do
     hub_status="$(curl -sf "http://127.0.0.1:4444/status" || true)"
-    if [[ -n "$hub_status" ]] && jq -e '(.warmTotal | type == "number") and (.warmTotal > 0)' <<<"$hub_status" >/dev/null 2>&1; then
-      echo "$hub_status" | jq '{warmReady,warmTotal,used,total}'
+    if [[ -n "$hub_status" ]] && jq -e \
+        '(.warmTotal | type == "number") and (.warmTotal >= 4) and (.hotTotal | type == "number") and (.hotTotal >= 2)' \
+        <<<"$hub_status" >/dev/null 2>&1; then
+      echo "$hub_status" | jq '{warmReady,warmTotal,hotReady,hotTotal,used,total}'
       warm_ok=true
       break
     fi
@@ -282,7 +284,7 @@ if [[ -n "$WARM_POOL_URL" ]] && command -v jq >/dev/null; then
     sleep 2
   done
   if [[ "$warm_ok" != true ]]; then
-    echo "FAIL: /status missing warmReady/warmTotal>0 — check hub -warm-pool-url and curl ${WARM_POOL_URL}/health" >&2
+    echo "FAIL: /status missing warm 4/4 + hot 2/2 — check hub -warm-pool-url and curl ${WARM_POOL_URL}/pool/slots" >&2
     curl -sf "${WARM_POOL_URL}/health" || curl -sf "${WARM_POOL_URL}/" || true
     ps aux | grep '[/]opt/selenoid/bin/selenoid' || true
     grep -E 'warm-pool|ExecStart' /etc/systemd/system/selenoid-hub.service 2>/dev/null || true

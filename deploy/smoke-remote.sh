@@ -88,13 +88,14 @@ else
   exit 1
 fi
 
-# Box1 warm-pool: hub -warm-pool-url → warmReady/warmTotal for UI WARM tile.
+# Box1 warm-pool: hub -warm-pool-url → warmReady/warmTotal + hotReady/hotTotal.
 # Skip with EXPECT_WARM_METRICS=0 (non-prod / no orchestrator).
 EXPECT_WARM_METRICS="${EXPECT_WARM_METRICS:-1}"
-EXPECTED_WARM_TOTAL="${EXPECTED_WARM_TOTAL:-2}"
+EXPECTED_WARM_TOTAL="${EXPECTED_WARM_TOTAL:-4}"
+EXPECTED_HOT_TOTAL="${EXPECTED_HOT_TOTAL:-2}"
 if [[ "$EXPECT_WARM_METRICS" != "0" ]]; then
-  echo "=== warm-pool metrics (warmReady/warmTotal) ==="
-  echo "$status_json" | jq '{warmReady,warmTotal,used,total}'
+  echo "=== warm-pool metrics (warmReady/warmTotal + hotReady/hotTotal) ==="
+  echo "$status_json" | jq '{warmReady,warmTotal,hotReady,hotTotal,used,total}'
   if ! jq -e --argjson n "$EXPECTED_WARM_TOTAL" \
       '(.warmTotal | type == "number") and (.warmTotal >= $n) and (.warmReady | type == "number")' \
       <<<"$status_json" >/dev/null; then
@@ -107,7 +108,19 @@ if [[ "$EXPECT_WARM_METRICS" != "0" ]]; then
     echo "FAIL /ui/status.state must expose warmTotal>=${EXPECTED_WARM_TOTAL} for UI WARM tile" >&2
     exit 1
   fi
-  echo "OK  warmReady/warmTotal present (hub + UI feed)"
+  if ! jq -e --argjson n "$EXPECTED_HOT_TOTAL" \
+      '(.hotTotal | type == "number") and (.hotTotal >= $n) and (.hotReady | type == "number")' \
+      <<<"$status_json" >/dev/null; then
+    echo "FAIL /status must expose hotReady/hotTotal>=${EXPECTED_HOT_TOTAL} (hub split pool=hot)" >&2
+    exit 1
+  fi
+  if ! jq -e --argjson n "$EXPECTED_HOT_TOTAL" \
+      '(.state.hotTotal | type == "number") and (.state.hotTotal >= $n)' \
+      <<<"$ui_status_json" >/dev/null; then
+    echo "FAIL /ui/status.state must expose hotTotal>=${EXPECTED_HOT_TOTAL} for UI HOT tile" >&2
+    exit 1
+  fi
+  echo "OK  warm 4/4 + hot 2/2 present (hub + UI feed)"
 fi
 
 echo "=== browser versions ==="

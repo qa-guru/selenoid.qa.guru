@@ -8,7 +8,7 @@ on:
         required: false
         default: ''
       ui_version:
-        description: 'selenoid-ui release tag (e.g. v3.0.31). Empty = v3.0.31 pin'
+        description: 'selenoid-ui release tag (e.g. v3.0.32). Empty = v3.0.32 pin'
         required: false
         default: ''
       ref:
@@ -75,14 +75,14 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             hub="${{ inputs.version }}"
             ui="${{ inputs.ui_version }}"
-            ui="${ui:-v3.0.31}"
+            ui="${ui:-v3.0.32}"
             ref="${{ inputs.ref }}"
             pull_browsers="${{ inputs.pull_browsers }}"
             skip_inline="${{ inputs.skip_inline_browser_smoke }}"
           elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
             hub="${{ github.event.client_payload.version }}"
             ui="${{ github.event.client_payload.ui_version }}"
-            ui="${ui:-v3.0.31}"
+            ui="${ui:-v3.0.32}"
             ref="${{ github.event.client_payload.ref || 'main' }}"
             pull_browsers="${{ github.event.client_payload.pull_browsers || 'never' }}"
             skip_inline="${{ github.event.client_payload.skip_inline_browser_smoke }}"
@@ -90,11 +90,11 @@ jobs:
               skip_inline="true"
             fi
           else
-            ui="v3.0.31"
+            ui="v3.0.32"
           fi
           smoke_source="${hub:-${ui}}"
           if [[ -z "${smoke_source}" ]]; then
-            smoke_source="v3.0.9"
+            smoke_source="v3.0.11"
           fi
           {
             echo "hub_version=${hub}"
@@ -169,7 +169,7 @@ jobs:
             export BROWSERS_PRODUCTION="$STAGING/browsers-production.json"
             export HUB_UNIT_SRC=/tmp/selenoid-hub.service
             export CM_VERSION=v3.0.2
-            export GIT_REVISION="${GIT_REVISION:-v3.0.9}"
+            export GIT_REVISION="${GIT_REVISION:-v3.0.11}"
             export SELENOID_WARM_POOL_URL="${SELENOID_WARM_POOL_URL:-http://127.0.0.1:9090}"
             echo "Deploy pins: SELENOID_VERSION=${SELENOID_VERSION:-default} SELENOID_UI_VERSION=${SELENOID_UI_VERSION} PULL_BROWSERS=${PULL_BROWSERS} SKIP_INLINE_BROWSER_SMOKE=${SKIP_INLINE_BROWSER_SMOKE}"
             grep -q download_binary "$STAGING/deploy.sh"
@@ -181,10 +181,11 @@ jobs:
           SELENOID_PUBLIC_USER: ${{ vars.SELENOID_PUBLIC_USER }}
           SELENOID_PUBLIC_PASSWORD: ${{ secrets.SELENOID_PUBLIC_PASSWORD }}
           SELENOID_PUBLIC_URL: ${{ vars.SELENOID_PUBLIC_URL }}
-          SELENOID_VERSION: ${{ steps.meta.outputs.hub_version || 'v3.0.9' }}
+          SELENOID_VERSION: ${{ steps.meta.outputs.hub_version || 'v3.0.11' }}
           SELENOID_UI_VERSION: ${{ steps.meta.outputs.ui_version }}
           EXPECT_WARM_METRICS: '1'
-          EXPECTED_WARM_TOTAL: '2'
+          EXPECTED_WARM_TOTAL: '4'
+          EXPECTED_HOT_TOTAL: '2'
         run: |
           if [[ -z "${SELENOID_PUBLIC_URL:-}" ]]; then
             echo "SELENOID_PUBLIC_URL is not set — skip public smoke test" >&2
