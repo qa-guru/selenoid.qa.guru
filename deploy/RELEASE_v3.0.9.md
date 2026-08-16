@@ -7,7 +7,7 @@
 
 | Item | Деталь |
 |------|--------|
-| hub | Chrome WD hub-attach via `-warm-pool-url` (`loopback:true` reserve, cold fallback) |
+| hub | Chrome WD container-reuse via `-warm-pool-url` (`loopback:true` reserve, cold fallback) |
 | orchestrator | box1 rebuilt from [selenoid-warm-pool v1.0.0](https://github.com/qa-guru/selenoid-warm-pool/releases/tag/v1.0.0) — loopback filter; `config.hub.yaml` still docker-DNS → **409 → cold** |
 | metrics | `warmReady`/`warmTotal` 2/2 unchanged |
 | smoke | pin gate via release `wait_only` + deploy-smoke `api,smoke` |
