@@ -150,7 +150,7 @@ jobs:
             export SELENOID_UI_VERSION="${{ steps.meta.outputs.ui_version }}"
             export PULL_BROWSERS="${{ steps.meta.outputs.pull_browsers }}"
             export SKIP_INLINE_BROWSER_SMOKE="${{ steps.meta.outputs.skip_inline }}"
-            export CM_VERSION="${CM_VERSION:-v3.0.2}"
+            export CM_VERSION="${CM_VERSION:-v3.0.3}"
             export VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
             export SELENOID_CONFIG_DIR="${{ vars.SELENOID_CONFIG_DIR }}"
             export SELENOID_CONFIG_DIR="${SELENOID_CONFIG_DIR:-/opt/selenoid}"
@@ -170,7 +170,7 @@ jobs:
             export NGINX_SYNC_SCRIPT=/tmp/sync-nginx.sh
             export BROWSERS_PRODUCTION="$STAGING/browsers-production.json"
             export HUB_UNIT_SRC=/tmp/selenoid-hub.service
-            export CM_VERSION=v3.0.2
+            export CM_VERSION=v3.0.3
             export GIT_REVISION="${GIT_REVISION:-v3.0.12}"
             export SELENOID_WARM_POOL_URL="${SELENOID_WARM_POOL_URL:-http://127.0.0.1:9090}"
             echo "Deploy pins: SELENOID_VERSION=${SELENOID_VERSION:-default} SELENOID_UI_VERSION=${SELENOID_UI_VERSION} PULL_BROWSERS=${PULL_BROWSERS} SKIP_INLINE_BROWSER_SMOKE=${SKIP_INLINE_BROWSER_SMOKE}"

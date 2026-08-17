@@ -30,7 +30,7 @@
 | Hub version | `https://selenoid.qa.guru/wd/hub/status` (auth) → `Selenoid v3.0.5 built at …` |
 | Video | `https://selenoid.qa.guru/video/` |
 
-Текущие pin’ы `deploy.sh`: hub **v3.0.12**, UI **v3.0.36**, cm **v3.0.2**, video-recorder **`qaguru/video-recorder:latest`**. Warm **4/4** / hot **2/2** on box1 orchestrator. См. [hub v3.0.12](https://github.com/qa-guru/selenoid/releases/tag/v3.0.12) · [UI v3.0.36](https://github.com/qa-guru/selenoid-ui/releases/tag/v3.0.36).
+Текущие pin’ы `deploy.sh`: hub **v3.0.12**, UI **v3.0.36**, cm **v3.0.3**, video-recorder **`qaguru/video-recorder:latest`**. Warm **4/4** / hot **2/2** on box1 orchestrator. См. [hub v3.0.12](https://github.com/qa-guru/selenoid/releases/tag/v3.0.12) · [UI v3.0.36](https://github.com/qa-guru/selenoid-ui/releases/tag/v3.0.36) · [cm v3.0.3](https://github.com/qa-guru/cm/releases/tag/v3.0.3).
 
 ### Демо-доступ
 
@@ -145,10 +145,10 @@ chmod +x deploy.sh
 ./deploy/remote-update.sh
 ```
 
-Pin версии (опционально; default hub **v3.0.12**, UI **v3.0.36**, cm **v3.0.2**):
+Pin версии (опционально; default hub **v3.0.12**, UI **v3.0.36**, cm **v3.0.3**):
 
 ```bash
-SELENOID_VERSION=v3.0.12 SELENOID_UI_VERSION=v3.0.36 CM_VERSION=v3.0.2 ./deploy/deploy.sh
+SELENOID_VERSION=v3.0.12 SELENOID_UI_VERSION=v3.0.36 CM_VERSION=v3.0.3 ./deploy/deploy.sh
 ```
 
 ### Проверка
