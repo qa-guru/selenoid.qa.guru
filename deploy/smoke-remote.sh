@@ -185,7 +185,7 @@ fi
 
 # UI build stamp lives on /ui/status (flat public /status is hub — no .version).
 ui_version="$(jq -r '.version // empty' <<<"$ui_status_json")"
-EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION:-${SELENOID_UI_VERSION:-v3.0.14}}"
+EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION:-${SELENOID_UI_VERSION:-v3.0.43}}"
 EXPECTED_UI_VERSION="${EXPECTED_UI_VERSION#v}"
 # Releases often stamp gitRevision[buildStamp], not the semver tag.
 EXPECTED_UI_MINOR="${EXPECTED_UI_VERSION%.*}"
