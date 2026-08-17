@@ -45,9 +45,7 @@
 поэтому его нельзя ротировать под один пайплайн. Для конкретного CI заводится отдельный пользователь
 через опциональные `SELENOID_CI_USER` / `SELENOID_CI_PASSWORD` — его можно ротировать и отзывать,
 не задев ни студентов, ни guest. Сейчас так живёт `multistack-ci`
-(secret `SELENOID_REMOTE_URL` в [autotests-ai/autotests-ai-multistack-app](https://github.com/autotests-ai/autotests-ai-multistack-app))
-и `qaguruchatgpt` (student Jenkins `chatgpt-app-tests-freestyle-java-allure3-full-attachments`, пароль в vault).
-Дополнительные аккаунты — `SELENOID_EXTRA_HTACCESS_ACCOUNTS=user:pass,...` (секреты, не в git).
+(secret `SELENOID_REMOTE_URL` в [autotests-ai/autotests-ai-multistack-app](https://github.com/autotests-ai/autotests-ai-multistack-app)).
 
 WebDriver — Basic Auth через `/etc/nginx/selenoid.htpasswd` (всех пользователей заводит `sync-nginx.sh`). Playwright — `accessKey` в query (nginx map), т.к. браузерный WS не умеет Basic Auth. UI Create Session / сниппеты — build-time `hubAuth` (`VITE_HUB_ACCESS_KEY`), без runtime `-access-key` / `-playwright-access-key` и без `/ui/status.accessKey`.
 
