@@ -104,8 +104,8 @@ pull_image_if_needed() {
 }
 
 echo "=== stop legacy containers ==="
-# Never stop warm-pool compose (selenoid-warm-pool / warm-chrome-*).
-# That stack is independent SSOT under /home/qaguru/selenoid-warm-pool/.
+# Never stop pool compose (selenoid-pool / alias selenoid-warm-pool / warm-chrome-*).
+# That stack is independent SSOT under /home/qaguru/selenoid-warm-pool/ (live host path).
 docker stop selenoid selenoid-ui 2>/dev/null || true
 docker rm selenoid selenoid-ui 2>/dev/null || true
 
@@ -190,7 +190,7 @@ unset DOCKER_API_VERSION || true
 docker stop selenoid 2>/dev/null || true
 docker rm selenoid 2>/dev/null || true
 
-# Unit SSOT for warm flag: projects/selenoid-home/selenoid-warm-pool/deploy/selenoid-hub.service
+# Unit SSOT for warm flag: projects/selenoid-home/selenoid-pool/deploy/selenoid-hub.service
 # (synced into this repo as deploy/selenoid-hub.service — must keep -warm-pool-url).
 HUB_UNIT_SRC="${HUB_UNIT_SRC:-${SCRIPT_DIR}/selenoid-hub.service}"
 if [[ ! -f "$HUB_UNIT_SRC" && -f /tmp/selenoid-hub.service ]]; then
@@ -206,7 +206,7 @@ if [[ -f "$HUB_UNIT_SRC" ]]; then
       "$HUB_UNIT_SRC" >"$HUB_UNIT_RENDER"
   HUB_UNIT_SRC="$HUB_UNIT_RENDER"
   if [[ -n "$WARM_POOL_URL" ]] && ! grep -q -- '-warm-pool-url' "$HUB_UNIT_SRC"; then
-    echo "FAIL: hub unit missing -warm-pool-url (WARM_POOL_URL=${WARM_POOL_URL}). Sync from selenoid-warm-pool/deploy/selenoid-hub.service" >&2
+    echo "FAIL: hub unit missing -warm-pool-url (WARM_POOL_URL=${WARM_POOL_URL}). Sync from selenoid-pool/deploy/selenoid-hub.service" >&2
     exit 1
   fi
 fi
@@ -463,6 +463,7 @@ elif timeout 60 sudo -n \
   SELENOID_PUBLIC_PASSWORD="${SELENOID_PUBLIC_PASSWORD:?SELENOID_PUBLIC_PASSWORD is required}" \
   SELENOID_CI_USER="${SELENOID_CI_USER:-}" \
   SELENOID_CI_PASSWORD="${SELENOID_CI_PASSWORD:-}" \
+  SELENOID_EXTRA_HTACCESS_ACCOUNTS="${SELENOID_EXTRA_HTACCESS_ACCOUNTS:-}" \
   "$NGINX_SYNC"; then
   echo "OK  nginx config applied"
 else
