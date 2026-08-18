@@ -8,7 +8,7 @@ on:
         required: false
         default: ''
       ui_version:
-        description: 'selenoid-ui release tag (e.g. v3.0.43). Empty = v3.0.43 pin'
+        description: 'selenoid-ui release tag (e.g. v3.0.44). Empty = v3.0.44 pin'
         required: false
         default: ''
       ref:
@@ -75,14 +75,14 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             hub="${{ inputs.version }}"
             ui="${{ inputs.ui_version }}"
-            ui="${ui:-v3.0.43}"
+            ui="${ui:-v3.0.44}"
             ref="${{ inputs.ref }}"
             pull_browsers="${{ inputs.pull_browsers }}"
             skip_inline="${{ inputs.skip_inline_browser_smoke }}"
           elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
             hub="${{ github.event.client_payload.version }}"
             ui="${{ github.event.client_payload.ui_version }}"
-            ui="${ui:-v3.0.43}"
+            ui="${ui:-v3.0.44}"
             ref="${{ github.event.client_payload.ref || 'main' }}"
             pull_browsers="${{ github.event.client_payload.pull_browsers || 'never' }}"
             skip_inline="${{ github.event.client_payload.skip_inline_browser_smoke }}"
@@ -90,10 +90,10 @@ jobs:
               skip_inline="true"
             fi
           else
-            ui="v3.0.43"
+            ui="v3.0.44"
           fi
           hub="${hub:-v3.0.13}"
-          ui="${ui:-v3.0.43}"
+          ui="${ui:-v3.0.44}"
           smoke_source="${hub:-${ui}}"
           if [[ -z "${smoke_source}" ]]; then
             smoke_source="v3.0.13"
