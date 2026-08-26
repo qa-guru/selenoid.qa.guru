@@ -29,6 +29,10 @@ on:
         required: false
         default: true
         type: boolean
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/browsers-production.json'
   repository_dispatch:
     types: [deploy-selenoid]
 
@@ -50,7 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.event.client_payload.ref || 'main' }}
+          ref: ${{ github.event_name == 'push' && github.sha || github.event_name == 'workflow_dispatch' && inputs.ref || github.event.client_payload.ref || 'main' }}
 
       - name: Require production auth configuration
         run: |
@@ -89,6 +93,12 @@ jobs:
             if [[ -z "${skip_inline}" || "${skip_inline}" == "null" ]]; then
               skip_inline="true"
             fi
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            hub="v3.0.14"
+            ui="v3.0.52"
+            ref="${{ github.sha }}"
+            pull_browsers="always"
+            skip_inline="true"
           else
             ui="v3.0.52"
           fi
