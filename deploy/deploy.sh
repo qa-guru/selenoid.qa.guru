@@ -380,10 +380,14 @@ echo
 if [[ "${SKIP_INLINE_BROWSER_SMOKE}" == "1" || "${SKIP_INLINE_BROWSER_SMOKE}" == "true" || "${SKIP_INLINE_BROWSER_SMOKE}" == "yes" ]]; then
   echo "=== skip inline WebDriver session smoke (SKIP_INLINE_BROWSER_SMOKE=${SKIP_INLINE_BROWSER_SMOKE}) ==="
 else
-echo "=== smoke: create chrome session ==="
+CHROME_VER="$(jq -r '.chrome.default' "${CONFIG_DIR}/browsers.json")"
+FIREFOX_VER="$(jq -r '.firefox.default' "${CONFIG_DIR}/browsers.json")"
+FIREFOX_MIN_VER="${FIREFOX_VER}-min"
+MSEDGE_VER="$(jq -r '.msedge.default' "${CONFIG_DIR}/browsers.json")"
+echo "=== smoke: create chrome session (${CHROME_VER}) ==="
 session_json="$(curl -sS -m 120 -X POST "http://127.0.0.1:4444/wd/hub/session" \
   -H 'Content-Type: application/json' \
-  -d '{"capabilities":{"alwaysMatch":{"browserName":"chrome","browserVersion":"149.0","selenoid:options":{"sessionTimeout":"30s","name":"deploy-smoke","enableVNC":true,"enableVideo":true}}}}' || true)"
+  -d "$(jq -nc --arg v "$CHROME_VER" '{capabilities:{alwaysMatch:{browserName:"chrome",browserVersion:$v,"selenoid:options":{sessionTimeout:"30s",name:"deploy-smoke",enableVNC:true,enableVideo:true}}}}')" || true)"
 if command -v jq >/dev/null; then
   session_id="$(jq -r '.value.sessionId // .sessionId // empty' <<<"$session_json")"
   if [[ -z "$session_id" ]]; then
@@ -397,10 +401,10 @@ else
   echo "$session_json"
 fi
 
-echo "=== smoke: create firefox session ==="
+echo "=== smoke: create firefox session (${FIREFOX_VER}) ==="
 session_json="$(curl -sS -m 120 -X POST "http://127.0.0.1:4444/wd/hub/session" \
   -H 'Content-Type: application/json' \
-  -d '{"capabilities":{"alwaysMatch":{"browserName":"firefox","browserVersion":"151.0","selenoid:options":{"sessionTimeout":"30s","name":"deploy-smoke","enableVNC":true}}}}' || true)"
+  -d "$(jq -nc --arg v "$FIREFOX_VER" '{capabilities:{alwaysMatch:{browserName:"firefox",browserVersion:$v,"selenoid:options":{sessionTimeout:"30s",name:"deploy-smoke",enableVNC:true}}}}')" || true)"
 if command -v jq >/dev/null; then
   session_id="$(jq -r '.value.sessionId // .sessionId // empty' <<<"$session_json")"
   if [[ -z "$session_id" ]]; then
@@ -414,10 +418,10 @@ else
   echo "$session_json"
 fi
 
-echo "=== smoke: create firefox-min session ==="
+echo "=== smoke: create firefox-min session (${FIREFOX_MIN_VER}) ==="
 session_json="$(curl -sS -m 120 -X POST "http://127.0.0.1:4444/wd/hub/session" \
   -H 'Content-Type: application/json' \
-  -d '{"capabilities":{"alwaysMatch":{"browserName":"firefox","browserVersion":"151.0-min","selenoid:options":{"sessionTimeout":"30s","name":"deploy-smoke","enableVNC":false,"enableVideo":false}}}}' || true)"
+  -d "$(jq -nc --arg v "$FIREFOX_MIN_VER" '{capabilities:{alwaysMatch:{browserName:"firefox",browserVersion:$v,"selenoid:options":{sessionTimeout:"30s",name:"deploy-smoke",enableVNC:false,enableVideo:false}}}}')" || true)"
 if command -v jq >/dev/null; then
   session_id="$(jq -r '.value.sessionId // .sessionId // empty' <<<"$session_json")"
   if [[ -z "$session_id" ]]; then
@@ -431,10 +435,10 @@ else
   echo "$session_json"
 fi
 
-echo "=== smoke: create msedge session ==="
+echo "=== smoke: create msedge session (${MSEDGE_VER}) ==="
 session_json="$(curl -sS -m 120 -X POST "http://127.0.0.1:4444/wd/hub/session" \
   -H 'Content-Type: application/json' \
-  -d '{"capabilities":{"alwaysMatch":{"browserName":"MicrosoftEdge","browserVersion":"145.0","selenoid:options":{"sessionTimeout":"30s","name":"deploy-smoke","enableVNC":true}}}}' || true)"
+  -d "$(jq -nc --arg v "$MSEDGE_VER" '{capabilities:{alwaysMatch:{browserName:"MicrosoftEdge",browserVersion:$v,"selenoid:options":{sessionTimeout:"30s",name:"deploy-smoke",enableVNC:true}}}}')" || true)"
 if command -v jq >/dev/null; then
   session_id="$(jq -r '.value.sessionId // .sessionId // empty' <<<"$session_json")"
   if [[ -z "$session_id" ]]; then

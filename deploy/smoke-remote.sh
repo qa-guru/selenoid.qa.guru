@@ -124,9 +124,12 @@ if [[ "$EXPECT_WARM_METRICS" != "0" ]]; then
 fi
 
 echo "=== browser versions ==="
-for pair in "chrome:149.0" "firefox:151.0" "msedge:145.0" "playwright-chromium:1.61.1" "playwright-chrome:1.61.1" "playwright-msedge:1.61.1"; do
-  browser="${pair%%:*}"
-  version="${pair##*:}"
+CATALOG="${BROWSERS_PRODUCTION:-$SCRIPT_DIR/browsers-production.json}"
+if [[ ! -f "$CATALOG" ]]; then
+  echo "FAIL missing catalog $CATALOG (smoke must follow browsers-production.json defaults)" >&2
+  exit 1
+fi
+while IFS=$'\t' read -r browser version; do
   # flat /status → .browsers[b][v]; UI /ui/status → .state.browsers[b][v]
   if jq -e --arg b "$browser" --arg v "$version" '.browsers[$b][$v] != null' <<<"$status_json" >/dev/null \
      && jq -e --arg b "$browser" --arg v "$version" '.state.browsers[$b][$v] != null' <<<"$ui_status_json" >/dev/null; then
@@ -135,7 +138,10 @@ for pair in "chrome:149.0" "firefox:151.0" "msedge:145.0" "playwright-chromium:1
     echo "FAIL $browser $version missing in /status (flat) and/or /ui/status (.state)" >&2
     exit 1
   fi
-done
+done < <(jq -r '
+  ["chrome","firefox","msedge","playwright-chromium","playwright-chrome","playwright-msedge"][] as $b
+  | "\($b)\t\(.[$b].default)"
+' "$CATALOG")
 
 # UI v3.0.7+: guest creds are build-time hubAuth (VITE_HUB_ACCESS_KEY), not /ui/status.accessKey
 # and not a runtime -access-key / -playwright-access-key flag.
