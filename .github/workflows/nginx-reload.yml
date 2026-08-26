@@ -77,25 +77,36 @@ jobs:
             BASE_URL="https://${SERVERNAME}"
             AUTH="${SELENOID_PUBLIC_USER}:${SELENOID_PUBLIC_PASSWORD}"
 
-            curl -fsSL "${BASE_URL}/status" >/dev/null
-            logs_code="$(curl -s -o /dev/null -w '%{http_code}' -u "${AUTH}" "${BASE_URL}/logs/unknown-session")"
+            curl -fsSL --http1.1 "${BASE_URL}/status" >/dev/null
+            logs_code="$(curl -sS --http1.1 -o /dev/null -w '%{http_code}' -u "${AUTH}" "${BASE_URL}/logs/unknown-session")"
             if [[ "$logs_code" != "400" ]]; then
               echo "FAIL: ${BASE_URL}/logs/unknown-session want HTTP 400, got ${logs_code}" >&2
               exit 1
             fi
-            logs_no_auth="$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}/logs/unknown-session")"
+            logs_no_auth="$(curl -sS --http1.1 -o /dev/null -w '%{http_code}' "${BASE_URL}/logs/unknown-session")"
             if [[ "$logs_no_auth" != "401" ]]; then
               echo "FAIL: ${BASE_URL}/logs/unknown-session without auth want HTTP 401, got ${logs_no_auth}" >&2
               exit 1
             fi
-            error_code="$(curl -s -o /dev/null -w '%{http_code}' -u "${AUTH}" "${BASE_URL}/error")"
+            wd_headers="$(curl -sSI --http1.1 "${BASE_URL}/wd/hub/status")"
+            if ! grep -qiE '^HTTP/1\.[01] 401' <<<"$wd_headers"; then
+              echo "FAIL: ${BASE_URL}/wd/hub/status without auth want HTTP 401" >&2
+              echo "$wd_headers" >&2
+              exit 1
+            fi
+            if grep -qiE '^www-authenticate:' <<<"$wd_headers"; then
+              echo "FAIL: ${BASE_URL}/wd/hub/status leaked WWW-Authenticate (native dialog)" >&2
+              echo "$wd_headers" >&2
+              exit 1
+            fi
+            error_code="$(curl -sS --http1.1 -o /dev/null -w '%{http_code}' -u "${AUTH}" "${BASE_URL}/error")"
             if [[ "$error_code" != "404" ]]; then
               echo "FAIL: ${BASE_URL}/error with auth want HTTP 404, got ${error_code}" >&2
               exit 1
             fi
-            vnc_code="$(curl -s -o /dev/null -w '%{http_code}' -u "${AUTH}" "${BASE_URL}/vnc/unknown-session")"
+            vnc_code="$(curl -sS --http1.1 -o /dev/null -w '%{http_code}' -u "${AUTH}" "${BASE_URL}/vnc/unknown-session")"
             if [[ "$vnc_code" != "400" ]]; then
               echo "FAIL: ${BASE_URL}/vnc/unknown-session with auth want HTTP 400, got ${vnc_code}" >&2
               exit 1
             fi
-            echo "OK: nginx reload smoke passed (/status, /logs/, /error, /vnc/)"
+            echo "OK: nginx reload smoke passed (/status, /logs/, /wd/hub, /error, /vnc/)"

@@ -59,6 +59,11 @@ if text.count("auth_request /_auth_htpasswd") < 4:
 realms = [line.strip() for line in text.splitlines() if line.strip().startswith('auth_basic "')]
 if realms != ['auth_basic "Selenoid";', 'auth_basic "Selenoid API";']:
     raise SystemExit(f"FAIL: unexpected auth_basic lines: {realms}")
+block = text.split("location = /_auth_htpasswd", 1)[1].split("location ", 1)[0]
+if "return " in block:
+    raise SystemExit("FAIL: /_auth_htpasswd must not use return (skips auth_basic)")
+if "try_files" not in block:
+    raise SystemExit("FAIL: /_auth_htpasswd must use try_files (content phase)")
 print("OK  auth_request on 443, auth_basic only in _auth_htpasswd + :4445")
 PY
 
