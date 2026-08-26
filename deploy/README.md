@@ -6,7 +6,7 @@
 |------|------------------|
 | `/` (UI) | `https://selenoid.qa.guru` |
 | `/wd/hub` | `https://selenoid.qa.guru/wd/hub` |
-| `/playwright/` | Create Session в UI или `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=<user>%3A<password>&enableVNC=true&enableVideo=true` |
+| `/playwright/` | Create Session в UI или `wss://selenoid.qa.guru/playwright/playwright-chromium/1.62.1?accessKey=<user>%3A<password>&enableVNC=true&enableVideo=true` |
 | `/status` | UI-shaped JSON (`.state`, `.version` = **selenoid-ui** stamp) |
 | `/hub/status` | raw hub capacity (total/used/browsers; без `.version`) |
 | `/wd/hub/status` | W3C hub status — **версия hub** в `.value.message` (basic auth) |
@@ -19,8 +19,8 @@
 | Назначение | URL |
 |------------|-----|
 | Selenium | `https://selenoid.qa.guru/wd/hub` |
-| Playwright (public) | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=<SELENOID_PUBLIC_USER>%3A<SELENOID_PUBLIC_PASSWORD>&enableVNC=true&enableVideo=true` |
-| Playwright (students) | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=user1:1234&enableVNC=true&enableVideo=true` |
+| Playwright (public) | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.62.1?accessKey=<SELENOID_PUBLIC_USER>%3A<SELENOID_PUBLIC_PASSWORD>&enableVNC=true&enableVideo=true` |
+| Playwright (students) | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.62.1?accessKey=user1:1234&enableVNC=true&enableVideo=true` |
 | UI | `https://selenoid.qa.guru/` |
 | Status (UI) | `https://selenoid.qa.guru/status` — `.version` = UI, не hub |
 | Hub status | `https://selenoid.qa.guru/hub/status` |
@@ -55,7 +55,7 @@ WebDriver — Basic Auth через `/etc/nginx/selenoid.htpasswd` (всех п�
 export SELENOID_URL=https://selenoid.qa.guru/wd/hub
 export SELENOID_PUBLIC_USER=qa_engineer
 export SELENOID_PUBLIC_PASSWORD='…'   # из vault / GitHub Environment secret, не из git
-export PW_TEST_CONNECT_WS_ENDPOINT="wss://selenoid.qa.guru/playwright/playwright-chromium/1.61.1?accessKey=${SELENOID_PUBLIC_USER}%3A${SELENOID_PUBLIC_PASSWORD}&enableVNC=true&enableVideo=true"
+export PW_TEST_CONNECT_WS_ENDPOINT="wss://selenoid.qa.guru/playwright/playwright-chromium/1.62.1?accessKey=${SELENOID_PUBLIC_USER}%3A${SELENOID_PUBLIC_PASSWORD}&enableVNC=true&enableVideo=true"
 export SELENOID_HOST=selenoid.qa.guru
 ```
 

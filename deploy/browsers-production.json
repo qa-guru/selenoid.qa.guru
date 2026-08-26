@@ -1,9 +1,9 @@
 {
   "chrome": {
-    "default": "149.0",
+    "default": "152.0",
     "versions": {
-      "149.0": {
-        "image": "qaguru/webdriver-chrome:149",
+      "152.0": {
+        "image": "qaguru/webdriver-chrome:152",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -14,8 +14,8 @@
           "ENABLE_VIDEO=true"
         ]
       },
-      "149.0-min": {
-        "image": "qaguru/webdriver-chrome:149-min",
+      "152.0-min": {
+        "image": "qaguru/webdriver-chrome:152-min",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -26,8 +26,8 @@
           "ENABLE_VIDEO=true"
         ]
       },
-      "148.0": {
-        "image": "qaguru/webdriver-chrome:148",
+      "151.0": {
+        "image": "qaguru/webdriver-chrome:151",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -38,8 +38,8 @@
           "ENABLE_VIDEO=true"
         ]
       },
-      "148.0-min": {
-        "image": "qaguru/webdriver-chrome:148-min",
+      "151.0-min": {
+        "image": "qaguru/webdriver-chrome:151-min",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -53,10 +53,10 @@
     }
   },
   "firefox": {
-    "default": "151.0",
+    "default": "154.0",
     "versions": {
-      "151.0": {
-        "image": "qaguru/webdriver-firefox:151",
+      "154.0": {
+        "image": "qaguru/webdriver-firefox:154",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -67,8 +67,8 @@
           "ENABLE_VIDEO=true"
         ]
       },
-      "151.0-min": {
-        "image": "qaguru/webdriver-firefox:151-min",
+      "154.0-min": {
+        "image": "qaguru/webdriver-firefox:154-min",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -79,8 +79,8 @@
           "ENABLE_VIDEO=true"
         ]
       },
-      "150.0": {
-        "image": "qaguru/webdriver-firefox:150",
+      "153.0": {
+        "image": "qaguru/webdriver-firefox:153",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -91,8 +91,8 @@
           "ENABLE_VIDEO=true"
         ]
       },
-      "150.0-min": {
-        "image": "qaguru/webdriver-firefox:150-min",
+      "153.0-min": {
+        "image": "qaguru/webdriver-firefox:153-min",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -106,10 +106,10 @@
     }
   },
   "msedge": {
-    "default": "145.0",
+    "default": "151.0",
     "versions": {
-      "145.0": {
-        "image": "qaguru/webdriver-msedge:145",
+      "151.0": {
+        "image": "qaguru/webdriver-msedge:151",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -120,8 +120,8 @@
           "ENABLE_VIDEO=true"
         ]
       },
-      "145.0-min": {
-        "image": "qaguru/webdriver-msedge:145-min",
+      "151.0-min": {
+        "image": "qaguru/webdriver-msedge:151-min",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -132,8 +132,8 @@
           "ENABLE_VIDEO=true"
         ]
       },
-      "144.0": {
-        "image": "qaguru/webdriver-msedge:144",
+      "150.0": {
+        "image": "qaguru/webdriver-msedge:150",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -144,8 +144,8 @@
           "ENABLE_VIDEO=true"
         ]
       },
-      "144.0-min": {
-        "image": "qaguru/webdriver-msedge:144-min",
+      "150.0-min": {
+        "image": "qaguru/webdriver-msedge:150-min",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -159,8 +159,28 @@
     }
   },
   "playwright-chromium": {
-    "default": "1.61.1",
+    "default": "1.62.1",
     "versions": {
+      "1.62.1": {
+        "image": "qaguru/playwright-chromium:1.62.1",
+        "port": "3000",
+        "path": "/",
+        "protocol": "playwright",
+        "playwrightVersion": "1.62.1",
+        "user": "pwuser",
+        "workDir": "/home/pwuser",
+        "shmSize": 2147483648
+      },
+      "1.62.1-min": {
+        "image": "qaguru/playwright-chromium:1.62.1-min",
+        "port": "3000",
+        "path": "/",
+        "protocol": "playwright",
+        "playwrightVersion": "1.62.1",
+        "user": "pwuser",
+        "workDir": "/home/pwuser",
+        "shmSize": 2147483648
+      },
       "1.61.1": {
         "image": "qaguru/playwright-chromium:1.61.1",
         "port": "3000",
@@ -214,8 +234,18 @@
     }
   },
   "playwright-firefox": {
-    "default": "1.61.1",
+    "default": "1.62.1",
     "versions": {
+      "1.62.1": {
+        "image": "qaguru/playwright-firefox:1.62.1",
+        "port": "3000",
+        "path": "/",
+        "protocol": "playwright",
+        "playwrightVersion": "1.62.1",
+        "user": "pwuser",
+        "workDir": "/home/pwuser",
+        "shmSize": 2147483648
+      },
       "1.61.1": {
         "image": "qaguru/playwright-firefox:1.61.1",
         "port": "3000",
@@ -249,8 +279,18 @@
     }
   },
   "playwright-webkit": {
-    "default": "1.61.1",
+    "default": "1.62.1",
     "versions": {
+      "1.62.1": {
+        "image": "qaguru/playwright-webkit:1.62.1",
+        "port": "3000",
+        "path": "/",
+        "protocol": "playwright",
+        "playwrightVersion": "1.62.1",
+        "user": "pwuser",
+        "workDir": "/home/pwuser",
+        "shmSize": 2147483648
+      },
       "1.61.1": {
         "image": "qaguru/playwright-webkit:1.61.1",
         "port": "3000",
@@ -284,8 +324,18 @@
     }
   },
   "playwright-chrome": {
-    "default": "1.61.1",
+    "default": "1.62.1",
     "versions": {
+      "1.62.1": {
+        "image": "qaguru/playwright-chrome:1.62.1",
+        "port": "3000",
+        "path": "/",
+        "protocol": "playwright",
+        "playwrightVersion": "1.62.1",
+        "user": "pwuser",
+        "workDir": "/home/pwuser",
+        "shmSize": 2147483648
+      },
       "1.61.1": {
         "image": "qaguru/playwright-chrome:1.61.1",
         "port": "3000",
@@ -319,8 +369,18 @@
     }
   },
   "playwright-msedge": {
-    "default": "1.61.1",
+    "default": "1.62.1",
     "versions": {
+      "1.62.1": {
+        "image": "qaguru/playwright-msedge:1.62.1",
+        "port": "3000",
+        "path": "/",
+        "protocol": "playwright",
+        "playwrightVersion": "1.62.1",
+        "user": "pwuser",
+        "workDir": "/home/pwuser",
+        "shmSize": 2147483648
+      },
       "1.61.1": {
         "image": "qaguru/playwright-msedge:1.61.1",
         "port": "3000",
@@ -362,17 +422,6 @@
         "path": "/wd/hub",
         "mem": "2g",
         "cpu": "2.0"
-      },
-      "8.0": {
-        "image": "qaguru/android:8",
-        "port": "4444",
-        "path": "/wd/hub",
-        "shmSize": 2147483648,
-        "mem": "6g",
-        "cpu": "4.0",
-        "env": [
-          "SCREEN_RESOLUTION=2100x2100x24"
-        ]
       },
       "10.0": {
         "image": "qaguru/android:10",
