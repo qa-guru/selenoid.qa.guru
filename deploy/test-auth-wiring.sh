@@ -59,12 +59,16 @@ if text.count("auth_request /_auth_htpasswd") < 4:
 realms = [line.strip() for line in text.splitlines() if line.strip().startswith('auth_basic "')]
 if realms != ['auth_basic "Selenoid";', 'auth_basic "Selenoid API";']:
     raise SystemExit(f"FAIL: unexpected auth_basic lines: {realms}")
+if "listen 127.0.0.1:18081" not in text:
+    raise SystemExit("FAIL: missing loopback htpasswd server")
+if "proxy_pass http://127.0.0.1:18081/_auth_check" not in text:
+    raise SystemExit("FAIL: /_auth_htpasswd must proxy to loopback auth")
 block = text.split("location = /_auth_htpasswd", 1)[1].split("location ", 1)[0]
+if "auth_basic" in block:
+    raise SystemExit("FAIL: auth_basic in auth_request subrequest is skipped by nginx")
 if "return " in block:
-    raise SystemExit("FAIL: /_auth_htpasswd must not use return (skips auth_basic)")
-if "try_files" not in block:
-    raise SystemExit("FAIL: /_auth_htpasswd must use try_files (content phase)")
-print("OK  auth_request on 443, auth_basic only in _auth_htpasswd + :4445")
+    raise SystemExit("FAIL: /_auth_htpasswd must not use return")
+print("OK  auth_request on 443, htpasswd on loopback :18081, :4445 keeps auth_basic")
 PY
 
 echo "=== tracked repo: no legacy public password literal ==="
