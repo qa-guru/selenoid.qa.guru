@@ -94,9 +94,14 @@ jobs:
               echo "$wd_headers" >&2
               exit 1
             fi
-            if grep -qiE '^www-authenticate:' <<<"$wd_headers"; then
-              echo "FAIL: ${BASE_URL}/wd/hub/status leaked WWW-Authenticate (native dialog)" >&2
+            if ! grep -qiE '^www-authenticate:[[:space:]]*Basic' <<<"$wd_headers"; then
+              echo "FAIL: ${BASE_URL}/wd/hub/status must send WWW-Authenticate (Selenium challenge)" >&2
               echo "$wd_headers" >&2
+              exit 1
+            fi
+            wd_auth="$(curl -sS --http1.1 -o /dev/null -w '%{http_code}' -u "${AUTH}" "${BASE_URL}/wd/hub/status")"
+            if [[ "$wd_auth" != "200" ]]; then
+              echo "FAIL: ${BASE_URL}/wd/hub/status with auth want HTTP 200, got ${wd_auth}" >&2
               exit 1
             fi
             error_code="$(curl -sS --http1.1 -o /dev/null -w '%{http_code}' -u "${AUTH}" "${BASE_URL}/error")"

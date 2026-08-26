@@ -47,28 +47,18 @@ if ./deploy/smoke-remote.sh 2>/dev/null; then
 fi
 echo "OK  smoke-remote rejects missing URL"
 
-echo "=== 443 auth_request (no native Basic Auth dialog) ==="
+echo "=== /wd/hub keeps auth_basic (Selenium WWW-Authenticate) ==="
 python - <<'PY'
 from pathlib import Path
 text = Path("deploy/nginx-selenoid.conf").read_text(encoding="utf-8")
-if "location = /_auth_htpasswd" not in text:
-    raise SystemExit("FAIL: missing internal /_auth_htpasswd")
-if text.count("auth_request /_auth_htpasswd") < 4:
-    raise SystemExit("FAIL: browser-facing locations must use auth_request")
-# Quoted challenge only in the internal location + API port 4445.
-realms = [line.strip() for line in text.splitlines() if line.strip().startswith('auth_basic "')]
-if realms != ['auth_basic "Selenoid";', 'auth_basic "Selenoid API";']:
-    raise SystemExit(f"FAIL: unexpected auth_basic lines: {realms}")
-if "listen 127.0.0.1:18081" not in text:
-    raise SystemExit("FAIL: missing loopback htpasswd server")
-if "proxy_pass http://127.0.0.1:18081/_auth_check" not in text:
-    raise SystemExit("FAIL: /_auth_htpasswd must proxy to loopback auth")
-block = text.split("location = /_auth_htpasswd", 1)[1].split("location ", 1)[0]
-if "auth_basic" in block:
-    raise SystemExit("FAIL: auth_basic in auth_request subrequest is skipped by nginx")
-if "return " in block:
-    raise SystemExit("FAIL: /_auth_htpasswd must not use return")
-print("OK  auth_request on 443, htpasswd on loopback :18081, :4445 keeps auth_basic")
+if "auth_request" in text:
+    raise SystemExit("FAIL: auth_request strips WWW-Authenticate and breaks Selenium clients")
+if "location ^~ /wd/hub" not in text:
+    raise SystemExit("FAIL: missing /wd/hub location")
+block = text.split("location ^~ /wd/hub", 1)[1].split("location ", 1)[0]
+if 'auth_basic "Selenoid";' not in block:
+    raise SystemExit("FAIL: /wd/hub must use auth_basic so clients see WWW-Authenticate")
+print("OK  /wd/hub auth_basic with WWW-Authenticate for WebDriver")
 PY
 
 echo "=== tracked repo: no legacy public password literal ==="
