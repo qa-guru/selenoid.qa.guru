@@ -9,7 +9,7 @@
 | `/playwright/` | Create Session в UI или `wss://selenoid.qa.guru/playwright/playwright-chromium/1.62.1?accessKey=<user>%3A<password>&enableVNC=true&enableVideo=true` |
 | `/status` | UI-shaped JSON (`.state`, `.version` = **selenoid-ui** stamp) |
 | `/hub/status` | raw hub capacity (total/used/browsers; без `.version`) |
-| `/wd/hub/status` | W3C hub status — **версия hub** в `.value.message` (basic auth) |
+| `/wd/hub/status` | W3C hub status — **версия hub** в `.value.message` (htpasswd, без WWW-Authenticate) |
 | `:4445` | прямой hub API для CI |
 
 Справочный полный конфиг: [`nginx-selenoid.conf`](nginx-selenoid.conf).
@@ -47,7 +47,7 @@
 не задев ни студентов, ни guest. Сейчас так живёт `multistack-ci`
 (secret `SELENOID_REMOTE_URL` в [autotests-ai/autotests-ai-multistack-app](https://github.com/autotests-ai/autotests-ai-multistack-app)).
 
-WebDriver — Basic Auth через `/etc/nginx/selenoid.htpasswd` (всех пользователей заводит `sync-nginx.sh`). Playwright — `accessKey` в query (nginx map), т.к. браузерный WS не умеет Basic Auth. UI Create Session / сниппеты — build-time `hubAuth` (`VITE_HUB_ACCESS_KEY`), без runtime `-access-key` / `-playwright-access-key` и без `/ui/status.accessKey`.
+WebDriver — htpasswd через `/etc/nginx/selenoid.htpasswd` (`sync-nginx.sh`). На `:443` проверка идёт через `auth_request`, **без** `WWW-Authenticate: Basic` — иначе Chrome рисует нативную модалку поверх UI. Playwright — `accessKey` в query (nginx map), т.к. браузерный WS не умеет Basic Auth. UI Create Session / сниппеты — build-time `hubAuth` (`VITE_HUB_ACCESS_KEY`), без runtime `-access-key` / `-playwright-access-key` и без `/ui/status.accessKey`.
 
 ### Переменные для тестов
 

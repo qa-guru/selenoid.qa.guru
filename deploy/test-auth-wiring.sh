@@ -47,6 +47,21 @@ if ./deploy/smoke-remote.sh 2>/dev/null; then
 fi
 echo "OK  smoke-remote rejects missing URL"
 
+echo "=== 443 auth_request (no native Basic Auth dialog) ==="
+python - <<'PY'
+from pathlib import Path
+text = Path("deploy/nginx-selenoid.conf").read_text(encoding="utf-8")
+if "location = /_auth_htpasswd" not in text:
+    raise SystemExit("FAIL: missing internal /_auth_htpasswd")
+if text.count("auth_request /_auth_htpasswd") < 4:
+    raise SystemExit("FAIL: browser-facing locations must use auth_request")
+# Quoted challenge only in the internal location + API port 4445.
+realms = [line.strip() for line in text.splitlines() if line.strip().startswith('auth_basic "')]
+if realms != ['auth_basic "Selenoid";', 'auth_basic "Selenoid API";']:
+    raise SystemExit(f"FAIL: unexpected auth_basic lines: {realms}")
+print("OK  auth_request on 443, auth_basic only in _auth_htpasswd + :4445")
+PY
+
 echo "=== tracked repo: no legacy public password literal ==="
 if grep -R --exclude='test-auth-wiring.sh' -n 'aAb_' deploy/ .github/ README.md 2>/dev/null; then
   echo "FAIL: legacy password literal still in tracked files" >&2
