@@ -27,10 +27,10 @@
 | Hub logs | `https://selenoid.qa.guru/logs/{sessionId}` (auth; WebSocket) |
 | Hub error | `https://selenoid.qa.guru/error` (auth; invalid session JSON) |
 | Hub VNC | `https://selenoid.qa.guru/vnc/{sessionId}` (auth; WebSocket) |
-| Hub version | `https://selenoid.qa.guru/wd/hub/status` (auth) → `Selenoid v3.0.5 built at …` |
+| Hub version | `https://selenoid.qa.guru/wd/hub/status` (auth) → `Selenoid v3.0.14 built at …` |
 | Video | `https://selenoid.qa.guru/video/` |
 
-Текущие pin’ы `deploy.sh`: hub **v3.0.13**, UI **v3.0.45**, cm **v3.0.3**, video-recorder **`qaguru/video-recorder:latest`**. Warm **4/4** / hot **2/2** on box1 orchestrator. См. [RELEASE_v3.0.45.md](RELEASE_v3.0.45.md) · [hub v3.0.13](https://github.com/qa-guru/selenoid/releases/tag/v3.0.13) · [UI v3.0.45](https://github.com/qa-guru/selenoid-ui/releases/tag/v3.0.45) · [cm v3.0.3](https://github.com/qa-guru/cm/releases/tag/v3.0.3).
+Текущие pin’ы `deploy.sh`: hub **v3.0.14**, UI **v3.0.52**, cm **v3.0.3**, video-recorder **`qaguru/video-recorder:latest`**. Warm **4/4** / hot **2/2** on box1 orchestrator. См. [hub v3.0.14](https://github.com/qa-guru/selenoid/releases/tag/v3.0.14) · [UI v3.0.52](https://github.com/qa-guru/selenoid-ui/releases/tag/v3.0.52) · [cm v3.0.3](https://github.com/qa-guru/cm/releases/tag/v3.0.3). Каталог браузеров — **не** этот пин: watch [qa-guru/browser-image](https://github.com/qa-guru/browser-image) → copy + `docker pull` + **SIGHUP** хабу.
 
 ### Демо-доступ
 
@@ -67,8 +67,10 @@ Workflow [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) в [q
 
 | Триггер | Когда |
 |---------|-------|
-| `workflow_dispatch` | **Ручной деплой** — Actions → deploy → Run workflow (версия стека и git ref опциональны) |
-| `repository_dispatch: deploy-selenoid` | Вызов из внешнего CI (payload: `version`, опционально `ref`) |
+| `push` `deploy/browsers-production.json` | **Каталог** — copy + `docker pull` + SIGHUP хабу. Hub/UI не гасятся. Watch кладёт этот файл последним |
+| `repository_dispatch: deploy-selenoid` без `version` и `ui_version` | Тоже каталог (патч того же тега: `pull-prod` / `promote-prod`) |
+| `repository_dispatch: deploy-selenoid` **с** `version` / `ui_version` | Релиз hub/UI — полный `deploy.sh` (stop/start) |
+| `workflow_dispatch` | Ручной **полный** деплой стека (дефолты hub **v3.0.14** / UI **v3.0.52**) |
 
 **Prod Go smoke owner:** этот workflow (`deploy-smoke` → `api,smoke`, callback 35m).  
 `selenoid` / `selenoid-ui` release после `deploy-prod-dispatch` только ждут pin (`wait_only`) — второй `deploy-smoke` не шлют (иначе дубль под `prod-smoke-gate`).
@@ -116,37 +118,30 @@ sudo DEPLOY_USER=selenoid ./deploy/bootstrap.sh
 # перелогиниться, чтобы применилась группа docker
 ```
 
-### Обновление стека
+### Каталог браузеров (без bounce hub/UI)
+
+Канон: copy `browsers-production.json` → `docker pull` → **SIGHUP** хабу. Сессии живые. UI не гасить.
 
 ```bash
-# из клона qa-guru/selenoid.qa.guru на сервере
+# на Box1, от пользователя selenoid; hub уже должен отвечать на :4444
+BROWSERS_ONLY=1 PULL_BROWSERS=always \
+  BROWSERS_PRODUCTION=deploy/browsers-production.json \
+  ./deploy/deploy.sh
+```
+
+Обычный путь — GHA (`push` JSON или dispatch без тегов). Не вызывать полный `deploy.sh` / `systemctl restart selenoid-hub` ради каталога.
+
+### Обновление стека (hub/UI релиз)
+
+```bash
+# из клона qa-guru/selenoid.qa.guru на сервере — полный stop/start
 ./deploy/deploy.sh
 ```
 
-Или скачать скрипт с GitHub:
+Pin версии (опционально; default hub **v3.0.14**, UI **v3.0.52**, cm **v3.0.3**):
 
 ```bash
-curl -sL https://raw.githubusercontent.com/qa-guru/selenoid.qa.guru/main/deploy/deploy.sh -o deploy.sh
-chmod +x deploy.sh
-./deploy.sh
-```
-
-Или из клона репозитория:
-
-```bash
-./deploy/deploy.sh
-```
-
-Быстрое обновление без полного `deploy.sh`:
-
-```bash
-./deploy/remote-update.sh
-```
-
-Pin версии (опционально; default hub **v3.0.13**, UI **v3.0.45**, cm **v3.0.3**):
-
-```bash
-SELENOID_VERSION=v3.0.13 SELENOID_UI_VERSION=v3.0.45 CM_VERSION=v3.0.3 ./deploy/deploy.sh
+SELENOID_VERSION=v3.0.14 SELENOID_UI_VERSION=v3.0.52 CM_VERSION=v3.0.3 ./deploy/deploy.sh
 ```
 
 ### Проверка
@@ -241,7 +236,9 @@ Hub — **native-бинарник на хосте** (не hub-in-docker: кон�
 
 ```bash
 sudo systemctl status selenoid-hub.service
-sudo systemctl restart selenoid-hub.service     # применить новый browsers.json/бинарник
+# каталог: SIGHUP (сессии живые). Не restart ради browsers.json.
+kill -HUP "$(pgrep -n -f /opt/selenoid/bin/selenoid)"
+sudo systemctl restart selenoid-hub.service     # только новый бинарник hub
 curl -s http://127.0.0.1:4444/status            # total/used
 ```
 

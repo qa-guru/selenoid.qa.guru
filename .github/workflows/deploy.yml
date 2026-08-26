@@ -193,7 +193,6 @@ jobs:
             export BROWSERS_PRODUCTION="$STAGING/browsers-production.json"
             export HUB_UNIT_SRC=/tmp/selenoid-hub.service
             export CM_VERSION=v3.0.3
-            export GIT_REVISION="${GIT_REVISION:-v3.0.13}"
             export SELENOID_WARM_POOL_URL="${SELENOID_WARM_POOL_URL:-http://127.0.0.1:9090}"
             echo "Deploy pins: BROWSERS_ONLY=${BROWSERS_ONLY:-false} SELENOID_VERSION=${SELENOID_VERSION:-unchanged} SELENOID_UI_VERSION=${SELENOID_UI_VERSION:-unchanged} PULL_BROWSERS=${PULL_BROWSERS} SKIP_INLINE_BROWSER_SMOKE=${SKIP_INLINE_BROWSER_SMOKE}"
             grep -q download_binary "$STAGING/deploy.sh"

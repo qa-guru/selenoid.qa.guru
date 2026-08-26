@@ -305,7 +305,7 @@ if [[ "$hub_via_systemd" != true ]] && systemctl is-active --quiet selenoid-hub.
   # (that would pkill the systemd-managed process and fight Restart=always).
   echo "--- selenoid-hub.service already active; not starting nohup ---"
   if ! sudo -n systemctl restart selenoid-hub.service 2>/dev/null; then
-    echo "WARN: apply new browsers.json/binary manually: sudo systemctl restart selenoid-hub.service" >&2
+    echo "WARN: apply new hub binary manually: sudo systemctl restart selenoid-hub.service (catalog = SIGHUP, not restart)" >&2
   fi
   hub_via_systemd=true
 fi
