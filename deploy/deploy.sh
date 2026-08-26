@@ -16,12 +16,21 @@ WARM_POOL_URL="${SELENOID_WARM_POOL_URL:-http://127.0.0.1:9090}"
 GITHUB_OWNER="${GITHUB_OWNER:-qa-guru}"
 # never | auto | always — auto skips pull when browsers.json sha256 unchanged.
 PULL_BROWSERS="${PULL_BROWSERS:-auto}"
+# 1/true: copy browsers.json + docker pull + SIGHUP hub. Do not stop hub or UI.
+BROWSERS_ONLY="${BROWSERS_ONLY:-0}"
 # 1/true skips chrome/firefox/msedge session smoke in deploy.sh (public smoke stays in GHA).
 SKIP_INLINE_BROWSER_SMOKE="${SKIP_INLINE_BROWSER_SMOKE:-0}"
 version_args=()
 if [[ -n "$VERSION" ]]; then
   version_args=(-v "$VERSION")
 fi
+
+browsers_only() {
+  case "${BROWSERS_ONLY}" in
+    1|true|yes) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 if ! groups | grep -qw docker; then
   echo "Current user is not in the docker group. Run deploy/bootstrap.sh first." >&2
@@ -48,7 +57,9 @@ refresh_cm() {
   chmod +x "${CM_BIN}.new.$$"
   mv "${CM_BIN}.new.$$" "$CM_BIN"
 }
-refresh_cm
+if ! browsers_only; then
+  refresh_cm
+fi
 
 download_binary() {
   local repo="$1" dest="$2" tag="${3:-${VERSION:-latest}}"
@@ -103,6 +114,100 @@ pull_image_if_needed() {
   fi
 }
 
+apply_production_browsers_json() {
+  BROWSERS_PRODUCTION="${BROWSERS_PRODUCTION:-/tmp/browsers-production.json}"
+  if [[ -f "$BROWSERS_PRODUCTION" ]]; then
+    echo "=== apply production browsers.json ==="
+    cp "$BROWSERS_PRODUCTION" "$CONFIG_DIR/browsers.json"
+  elif browsers_only; then
+    echo "FAIL: BROWSERS_ONLY requires BROWSERS_PRODUCTION ($BROWSERS_PRODUCTION)" >&2
+    exit 1
+  else
+    "$CM_BIN" selenoid configure -c "$CONFIG_DIR" -f "${version_args[@]}"
+  fi
+}
+
+pull_browser_images() {
+  echo "=== pull browser images from browsers.json (PULL_BROWSERS=${PULL_BROWSERS}) ==="
+  PULL_STATE="${CONFIG_DIR}/.deploy-browsers-sha256"
+  browsers_sha=""
+  if command -v sha256sum >/dev/null 2>&1; then
+    browsers_sha="$(sha256sum "$CONFIG_DIR/browsers.json" | awk '{print $1}')"
+  elif command -v shasum >/dev/null 2>&1; then
+    browsers_sha="$(shasum -a 256 "$CONFIG_DIR/browsers.json" | awk '{print $1}')"
+  fi
+  if [[ "${PULL_BROWSERS}" == "auto" && -n "$browsers_sha" && -f "$PULL_STATE" && "$(cat "$PULL_STATE")" == "$browsers_sha" ]]; then
+    echo "browsers.json unchanged — skip all browser image pulls"
+    return 0
+  fi
+  pull_images() {
+    if command -v jq >/dev/null 2>&1; then
+      jq -r '.. | objects | select(has("image")) | .image' "$CONFIG_DIR/browsers.json" | sort -u
+    else
+      grep -oE '"image": "[^"]+"' "$CONFIG_DIR/browsers.json" | cut -d'"' -f4 | sort -u
+    fi
+  }
+  while read -r img; do
+    pull_image_if_needed "$img"
+  done < <(pull_images)
+  pull_image_if_needed "${VIDEO_RECORDER_IMAGE}"
+  if [[ -n "$browsers_sha" ]]; then
+    echo "$browsers_sha" > "$PULL_STATE"
+  fi
+}
+
+sighup_hub_reload_catalog() {
+  local pid=""
+  pid="$(pgrep -n -f "${CONFIG_DIR}/bin/selenoid" || true)"
+  if [[ -n "$pid" ]]; then
+    echo "=== SIGHUP hub pid ${pid} (reload browsers.json, keep sessions) ==="
+    kill -HUP "$pid"
+    return 0
+  fi
+  if sudo -n systemctl kill -s HUP selenoid-hub.service 2>/dev/null; then
+    echo "=== SIGHUP hub via systemctl (reload browsers.json) ==="
+    return 0
+  fi
+  echo "FAIL: hub process not found — catalog reload needs a running hub" >&2
+  exit 1
+}
+
+if browsers_only; then
+  echo "=== browsers-only: copy catalog + pull images + SIGHUP hub (no hub/UI stop) ==="
+  if ! curl -sf --max-time 5 "http://127.0.0.1:4444/status" >/dev/null; then
+    echo "FAIL: hub /status is down — browsers-only cannot start the stack; use a full deploy" >&2
+    exit 1
+  fi
+  apply_production_browsers_json
+  pull_browser_images
+  sighup_hub_reload_catalog
+  hub_ok=false
+  for attempt in 1 2 3 4 5 6; do
+    if curl -sf --max-time 5 "http://127.0.0.1:4444/status" >/dev/null; then
+      hub_ok=true
+      break
+    fi
+    echo "hub /status after SIGHUP not ready (attempt ${attempt}/6)..." >&2
+    sleep 1
+  done
+  if [[ "$hub_ok" != true ]]; then
+    echo "FAIL: hub /status did not recover after SIGHUP" >&2
+    exit 1
+  fi
+  echo "=== local hub status (hub stayed up) ==="
+  curl -sf "http://127.0.0.1:4444/status" | (command -v jq >/dev/null && jq . || cat)
+  echo
+  echo "=== UI left running ==="
+  if ! curl -sf --max-time 5 "http://127.0.0.1:8080/status" >/dev/null; then
+    echo "FAIL: UI /status is down (browsers-only does not restart UI)" >&2
+    exit 1
+  fi
+  echo "OK  UI /status 200 — New Session reads versions from hub /status"
+  docker ps --filter name=selenoid --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+  pgrep -af "${CONFIG_DIR}/bin/selenoid" || true
+  exit 0
+fi
+
 echo "=== stop legacy containers ==="
 # Never stop pool compose (selenoid-pool / alias selenoid-warm-pool / warm-chrome-*).
 # That stack is independent SSOT under /home/qaguru/selenoid-warm-pool/ (live host path).
@@ -126,40 +231,8 @@ download_binary_if_needed selenoid "$CONFIG_DIR/bin/selenoid" "$VERSION"
 download_binary_if_needed selenoid-ui "$CONFIG_DIR/bin/selenoid-ui" "$UI_VERSION"
 
 echo "=== configure hub (browsers.json + pull images) ==="
-BROWSERS_PRODUCTION="${BROWSERS_PRODUCTION:-/tmp/browsers-production.json}"
-if [[ -f "$BROWSERS_PRODUCTION" ]]; then
-  echo "=== apply production browsers.json (skip cm configure) ==="
-  cp "$BROWSERS_PRODUCTION" "$CONFIG_DIR/browsers.json"
-else
-  "$CM_BIN" selenoid configure -c "$CONFIG_DIR" -f "${version_args[@]}"
-fi
-
-echo "=== pull browser images from browsers.json (PULL_BROWSERS=${PULL_BROWSERS}) ==="
-PULL_STATE="${CONFIG_DIR}/.deploy-browsers-sha256"
-browsers_sha=""
-if command -v sha256sum >/dev/null 2>&1; then
-  browsers_sha="$(sha256sum "$CONFIG_DIR/browsers.json" | awk '{print $1}')"
-elif command -v shasum >/dev/null 2>&1; then
-  browsers_sha="$(shasum -a 256 "$CONFIG_DIR/browsers.json" | awk '{print $1}')"
-fi
-if [[ "${PULL_BROWSERS}" == "auto" && -n "$browsers_sha" && -f "$PULL_STATE" && "$(cat "$PULL_STATE")" == "$browsers_sha" ]]; then
-  echo "browsers.json unchanged — skip all browser image pulls"
-else
-  pull_images() {
-    if command -v jq >/dev/null 2>&1; then
-      jq -r '.. | objects | select(has("image")) | .image' "$CONFIG_DIR/browsers.json" | sort -u
-    else
-      grep -oE '"image": "[^"]+"' "$CONFIG_DIR/browsers.json" | cut -d'"' -f4 | sort -u
-    fi
-  }
-  while read -r img; do
-    pull_image_if_needed "$img"
-  done < <(pull_images)
-  pull_image_if_needed "${VIDEO_RECORDER_IMAGE}"
-  if [[ -n "$browsers_sha" ]]; then
-    echo "$browsers_sha" > "$PULL_STATE"
-  fi
-fi
+apply_production_browsers_json
+pull_browser_images
 
 mkdir -p "$CONFIG_DIR/video" "$CONFIG_DIR/logs" "$CONFIG_DIR/har"
 

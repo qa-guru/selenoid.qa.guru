@@ -32,6 +32,7 @@ on:
   push:
     branches: [main]
     paths:
+      # Watch catalog: browsers-only (copy json + pull + SIGHUP hub). No hub/UI bounce.
       - 'deploy/browsers-production.json'
   repository_dispatch:
     types: [deploy-selenoid]
@@ -76,6 +77,7 @@ jobs:
           ref="main"
           pull_browsers="auto"
           skip_inline="true"
+          browsers_only="false"
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             hub="${{ inputs.version }}"
             ui="${{ inputs.ui_version }}"
@@ -86,24 +88,30 @@ jobs:
           elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
             hub="${{ github.event.client_payload.version }}"
             ui="${{ github.event.client_payload.ui_version }}"
-            ui="${ui:-v3.0.52}"
             ref="${{ github.event.client_payload.ref || 'main' }}"
             pull_browsers="${{ github.event.client_payload.pull_browsers || 'never' }}"
             skip_inline="${{ github.event.client_payload.skip_inline_browser_smoke }}"
             if [[ -z "${skip_inline}" || "${skip_inline}" == "null" ]]; then
               skip_inline="true"
             fi
+            if [[ -z "${hub}" && -z "${ui}" ]]; then
+              browsers_only="true"
+            else
+              ui="${ui:-v3.0.52}"
+            fi
           elif [[ "${{ github.event_name }}" == "push" ]]; then
-            hub="v3.0.14"
-            ui="v3.0.52"
+            # Catalog watch: browsers-production.json only — do not bounce hub/UI.
+            browsers_only="true"
             ref="${{ github.sha }}"
             pull_browsers="always"
             skip_inline="true"
           else
             ui="v3.0.52"
           fi
-          hub="${hub:-v3.0.14}"
-          ui="${ui:-v3.0.52}"
+          if [[ "${browsers_only}" != "true" ]]; then
+            hub="${hub:-v3.0.14}"
+            ui="${ui:-v3.0.52}"
+          fi
           smoke_source="${hub:-${ui}}"
           if [[ -z "${smoke_source}" ]]; then
             smoke_source="v3.0.14"
@@ -114,6 +122,7 @@ jobs:
             echo "ref=${ref}"
             echo "pull_browsers=${pull_browsers}"
             echo "skip_inline=${skip_inline}"
+            echo "browsers_only=${browsers_only}"
             echo "smoke_source_version=${smoke_source}"
           } >> "$GITHUB_OUTPUT"
 
@@ -153,11 +162,14 @@ jobs:
             # Optional per-consumer CI account; a host without it keeps the two base users.
             export SELENOID_CI_USER="${SELENOID_CI_USER:-}"
             export SELENOID_CI_PASSWORD="${SELENOID_CI_PASSWORD:-}"
+            export BROWSERS_ONLY="${{ steps.meta.outputs.browsers_only }}"
             TAG="${{ steps.meta.outputs.hub_version }}"
             if [[ -n "$TAG" ]]; then
               export SELENOID_VERSION="$TAG"
             fi
-            export SELENOID_UI_VERSION="${{ steps.meta.outputs.ui_version }}"
+            if [[ -n "${{ steps.meta.outputs.ui_version }}" ]]; then
+              export SELENOID_UI_VERSION="${{ steps.meta.outputs.ui_version }}"
+            fi
             export PULL_BROWSERS="${{ steps.meta.outputs.pull_browsers }}"
             export SKIP_INLINE_BROWSER_SMOKE="${{ steps.meta.outputs.skip_inline }}"
             export CM_VERSION="${CM_VERSION:-v3.0.3}"
@@ -183,7 +195,7 @@ jobs:
             export CM_VERSION=v3.0.3
             export GIT_REVISION="${GIT_REVISION:-v3.0.13}"
             export SELENOID_WARM_POOL_URL="${SELENOID_WARM_POOL_URL:-http://127.0.0.1:9090}"
-            echo "Deploy pins: SELENOID_VERSION=${SELENOID_VERSION:-default} SELENOID_UI_VERSION=${SELENOID_UI_VERSION} PULL_BROWSERS=${PULL_BROWSERS} SKIP_INLINE_BROWSER_SMOKE=${SKIP_INLINE_BROWSER_SMOKE}"
+            echo "Deploy pins: BROWSERS_ONLY=${BROWSERS_ONLY:-false} SELENOID_VERSION=${SELENOID_VERSION:-unchanged} SELENOID_UI_VERSION=${SELENOID_UI_VERSION:-unchanged} PULL_BROWSERS=${PULL_BROWSERS} SKIP_INLINE_BROWSER_SMOKE=${SKIP_INLINE_BROWSER_SMOKE}"
             grep -q download_binary "$STAGING/deploy.sh"
             grep -q -- '-warm-pool-url' "$STAGING/selenoid-hub.service"
             bash "$STAGING/deploy.sh"
