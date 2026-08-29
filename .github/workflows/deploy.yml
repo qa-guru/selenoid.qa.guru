@@ -234,7 +234,7 @@ jobs:
           SELENOID_UI_VERSION: ${{ steps.meta.outputs.smoke_ui_version }}
           EXPECT_WARM_METRICS: '1'
           EXPECTED_WARM_TOTAL: '4'
-          EXPECTED_HOT_TOTAL: '2'
+          EXPECTED_HOT_TOTAL: '8'
         run: |
           if [[ -z "${SELENOID_PUBLIC_URL:-}" ]]; then
             echo "SELENOID_PUBLIC_URL is not set — skip public smoke test" >&2

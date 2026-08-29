@@ -92,7 +92,7 @@ fi
 # Skip with EXPECT_WARM_METRICS=0 (non-prod / no orchestrator).
 EXPECT_WARM_METRICS="${EXPECT_WARM_METRICS:-1}"
 EXPECTED_WARM_TOTAL="${EXPECTED_WARM_TOTAL:-4}"
-EXPECTED_HOT_TOTAL="${EXPECTED_HOT_TOTAL:-2}"
+EXPECTED_HOT_TOTAL="${EXPECTED_HOT_TOTAL:-8}"
 if [[ "$EXPECT_WARM_METRICS" != "0" ]]; then
   echo "=== warm-pool metrics (warmReady/warmTotal + hotReady/hotTotal) ==="
   echo "$status_json" | jq '{warmReady,warmTotal,hotReady,hotTotal,used,total}'
