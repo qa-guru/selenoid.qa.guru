@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Hub stack release tag (e.g. v3.0.4). Empty = default in deploy.sh'
+        description: 'Hub tag (e.g. v3.0.15). Empty = keep live hub (do not rewind)'
         required: false
         default: ''
       ui_version:
-        description: 'selenoid-ui release tag (e.g. v3.0.52). Empty = v3.0.52 pin'
+        description: 'UI tag (e.g. v3.0.54). Empty = keep live UI (do not rewind)'
         required: false
         default: ''
       ref:
@@ -70,52 +70,76 @@ jobs:
 
       - name: Resolve stack version and script ref
         id: meta
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_HUB: ${{ inputs.version }}
+          INPUT_UI: ${{ inputs.ui_version }}
+          INPUT_REF: ${{ inputs.ref }}
+          INPUT_PULL: ${{ inputs.pull_browsers }}
+          INPUT_SKIP: ${{ inputs.skip_inline_browser_smoke }}
+          PAYLOAD_HUB: ${{ github.event.client_payload.version }}
+          PAYLOAD_UI: ${{ github.event.client_payload.ui_version }}
+          PAYLOAD_REF: ${{ github.event.client_payload.ref }}
+          PAYLOAD_PULL: ${{ github.event.client_payload.pull_browsers }}
+          PAYLOAD_SKIP: ${{ github.event.client_payload.skip_inline_browser_smoke }}
         run: |
           set -euo pipefail
+          # Fallback only when live probe fails. Never fill an omitted side with a
+          # stale pin (hub-only dispatch used to rewind UI to v3.0.52).
+          HUB_PIN="v3.0.15"
+          UI_PIN="v3.0.54"
+          emptyish() { [[ -z "${1:-}" || "${1}" == "null" ]]; }
+          live_hub=""
+          live_ui=""
+          if live_json="$(curl -fsS --max-time 8 https://selenoid.qa.guru/hub/ping)"; then
+            live_hub="$(jq -r '.version // empty' <<<"$live_json")"
+          fi
+          if live_json="$(curl -fsS --max-time 8 https://selenoid.qa.guru/ui/status)"; then
+            raw_ui="$(jq -r '.version // empty' <<<"$live_json")"
+            live_ui="${raw_ui%%[*}"
+          fi
           hub=""
           ui=""
           ref="main"
           pull_browsers="auto"
           skip_inline="true"
           browsers_only="false"
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            hub="${{ inputs.version }}"
-            ui="${{ inputs.ui_version }}"
-            ui="${ui:-v3.0.52}"
-            ref="${{ inputs.ref }}"
-            pull_browsers="${{ inputs.pull_browsers }}"
-            skip_inline="${{ inputs.skip_inline_browser_smoke }}"
-          elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
-            hub="${{ github.event.client_payload.version }}"
-            ui="${{ github.event.client_payload.ui_version }}"
-            ref="${{ github.event.client_payload.ref || 'main' }}"
-            pull_browsers="${{ github.event.client_payload.pull_browsers || 'never' }}"
-            skip_inline="${{ github.event.client_payload.skip_inline_browser_smoke }}"
-            if [[ -z "${skip_inline}" || "${skip_inline}" == "null" ]]; then
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            hub="${INPUT_HUB:-}"
+            ui="${INPUT_UI:-}"
+            ref="${INPUT_REF:-main}"
+            pull_browsers="${INPUT_PULL:-auto}"
+            skip_inline="${INPUT_SKIP:-true}"
+          elif [[ "${EVENT_NAME}" == "repository_dispatch" ]]; then
+            hub="${PAYLOAD_HUB:-}"
+            ui="${PAYLOAD_UI:-}"
+            ref="${PAYLOAD_REF:-main}"
+            pull_browsers="${PAYLOAD_PULL:-never}"
+            skip_inline="${PAYLOAD_SKIP:-}"
+            if emptyish "$skip_inline"; then
               skip_inline="true"
             fi
-            if [[ -z "${hub}" && -z "${ui}" ]]; then
+            if emptyish "$hub" && emptyish "$ui"; then
               browsers_only="true"
-            else
-              ui="${ui:-v3.0.52}"
             fi
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
+          elif [[ "${EVENT_NAME}" == "push" ]]; then
             # Catalog watch: browsers-production.json only — do not bounce hub/UI.
             browsers_only="true"
             ref="${{ github.sha }}"
             pull_browsers="always"
             skip_inline="true"
-          else
-            ui="v3.0.52"
           fi
           if [[ "${browsers_only}" != "true" ]]; then
-            hub="${hub:-v3.0.14}"
-            ui="${ui:-v3.0.52}"
+            if emptyish "$hub"; then
+              hub="${live_hub:-$HUB_PIN}"
+            fi
+            if emptyish "$ui"; then
+              ui="${live_ui:-$UI_PIN}"
+            fi
           fi
-          smoke_source="${hub:-${ui}}"
-          if [[ -z "${smoke_source}" ]]; then
-            smoke_source="v3.0.14"
-          fi
+          smoke_hub="${hub:-${live_hub:-$HUB_PIN}}"
+          smoke_ui="${ui:-${live_ui:-$UI_PIN}}"
+          smoke_source="${hub:-${ui:-$smoke_hub}}"
           {
             echo "hub_version=${hub}"
             echo "ui_version=${ui}"
@@ -124,6 +148,8 @@ jobs:
             echo "skip_inline=${skip_inline}"
             echo "browsers_only=${browsers_only}"
             echo "smoke_source_version=${smoke_source}"
+            echo "smoke_hub_version=${smoke_hub}"
+            echo "smoke_ui_version=${smoke_ui}"
           } >> "$GITHUB_OUTPUT"
 
       # Deploy user stays selenoid@ (canon ops user qaguru is for interactive SSH only).
@@ -172,7 +198,7 @@ jobs:
             fi
             export PULL_BROWSERS="${{ steps.meta.outputs.pull_browsers }}"
             export SKIP_INLINE_BROWSER_SMOKE="${{ steps.meta.outputs.skip_inline }}"
-            export CM_VERSION="${CM_VERSION:-v3.0.3}"
+            export CM_VERSION="${CM_VERSION:-v3.0.4}"
             export VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
             export SELENOID_CONFIG_DIR="${{ vars.SELENOID_CONFIG_DIR }}"
             export SELENOID_CONFIG_DIR="${SELENOID_CONFIG_DIR:-/opt/selenoid}"
@@ -192,7 +218,7 @@ jobs:
             export NGINX_SYNC_SCRIPT=/tmp/sync-nginx.sh
             export BROWSERS_PRODUCTION="$STAGING/browsers-production.json"
             export HUB_UNIT_SRC=/tmp/selenoid-hub.service
-            export CM_VERSION=v3.0.3
+            export CM_VERSION=v3.0.4
             export SELENOID_WARM_POOL_URL="${SELENOID_WARM_POOL_URL:-http://127.0.0.1:9090}"
             echo "Deploy pins: BROWSERS_ONLY=${BROWSERS_ONLY:-false} SELENOID_VERSION=${SELENOID_VERSION:-unchanged} SELENOID_UI_VERSION=${SELENOID_UI_VERSION:-unchanged} PULL_BROWSERS=${PULL_BROWSERS} SKIP_INLINE_BROWSER_SMOKE=${SKIP_INLINE_BROWSER_SMOKE}"
             grep -q download_binary "$STAGING/deploy.sh"
@@ -204,8 +230,8 @@ jobs:
           SELENOID_PUBLIC_USER: ${{ vars.SELENOID_PUBLIC_USER }}
           SELENOID_PUBLIC_PASSWORD: ${{ secrets.SELENOID_PUBLIC_PASSWORD }}
           SELENOID_PUBLIC_URL: ${{ vars.SELENOID_PUBLIC_URL }}
-          SELENOID_VERSION: ${{ steps.meta.outputs.hub_version || 'v3.0.13' }}
-          SELENOID_UI_VERSION: ${{ steps.meta.outputs.ui_version }}
+          SELENOID_VERSION: ${{ steps.meta.outputs.smoke_hub_version }}
+          SELENOID_UI_VERSION: ${{ steps.meta.outputs.smoke_ui_version }}
           EXPECT_WARM_METRICS: '1'
           EXPECTED_WARM_TOTAL: '4'
           EXPECTED_HOT_TOTAL: '2'

@@ -6,9 +6,9 @@ set -euo pipefail
 CONFIG_DIR="${SELENOID_CONFIG_DIR:-/opt/selenoid}"
 CM_BIN="${CM_BIN:-$HOME/cm}"
 CM_URL="${CM_URL:-https://github.com/qa-guru/cm/releases/latest/download/cm_linux_amd64}"
-VERSION="${SELENOID_VERSION:-v3.0.14}"
-UI_VERSION="${SELENOID_UI_VERSION:-v3.0.52}"
-CM_VERSION="${CM_VERSION:-v3.0.3}"
+VERSION="${SELENOID_VERSION:-v3.0.15}"
+UI_VERSION="${SELENOID_UI_VERSION:-v3.0.54}"
+CM_VERSION="${CM_VERSION:-v3.0.4}"
 VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
 # Box1 warm-pool orchestrator (docker-compose.hub.yml → 127.0.0.1:9090).
 # Must match deploy/selenoid-hub.service (-warm-pool-url). Empty disables.
