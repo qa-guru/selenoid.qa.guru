@@ -10,9 +10,7 @@
           "/tmp": "size=512m"
         },
         "shmSize": 2147483648,
-        "env": [
-          "ENABLE_VIDEO=true"
-        ]
+        "env": ["ENABLE_VIDEO=true"]
       },
       "152.0-min": {
         "image": "qaguru/webdriver-chrome:152-min",
@@ -22,9 +20,7 @@
           "/tmp": "size=512m"
         },
         "shmSize": 2147483648,
-        "env": [
-          "ENABLE_VIDEO=true"
-        ]
+        "env": ["ENABLE_VIDEO=true"]
       },
       "151.0": {
         "image": "qaguru/webdriver-chrome:151",
@@ -34,9 +30,7 @@
           "/tmp": "size=512m"
         },
         "shmSize": 2147483648,
-        "env": [
-          "ENABLE_VIDEO=true"
-        ]
+        "env": ["ENABLE_VIDEO=true"]
       },
       "151.0-min": {
         "image": "qaguru/webdriver-chrome:151-min",
@@ -46,9 +40,27 @@
           "/tmp": "size=512m"
         },
         "shmSize": 2147483648,
-        "env": [
-          "ENABLE_VIDEO=true"
-        ]
+        "env": ["ENABLE_VIDEO=true"]
+      },
+      "148.0": {
+        "image": "qaguru/webdriver-chrome:148",
+        "port": "4444",
+        "path": "/",
+        "tmpfs": {
+          "/tmp": "size=512m"
+        },
+        "shmSize": 2147483648,
+        "env": ["ENABLE_VIDEO=true"]
+      },
+      "148.0-min": {
+        "image": "qaguru/webdriver-chrome:148-min",
+        "port": "4444",
+        "path": "/",
+        "tmpfs": {
+          "/tmp": "size=512m"
+        },
+        "shmSize": 2147483648,
+        "env": ["ENABLE_VIDEO=true"]
       }
     }
   },
@@ -63,9 +75,7 @@
           "/tmp": "size=512m"
         },
         "shmSize": 2147483648,
-        "env": [
-          "ENABLE_VIDEO=true"
-        ]
+        "env": ["ENABLE_VIDEO=true"]
       },
       "154.0-min": {
         "image": "qaguru/webdriver-firefox:154-min",
@@ -75,9 +85,7 @@
           "/tmp": "size=512m"
         },
         "shmSize": 2147483648,
-        "env": [
-          "ENABLE_VIDEO=true"
-        ]
+        "env": ["ENABLE_VIDEO=true"]
       },
       "153.0": {
         "image": "qaguru/webdriver-firefox:153",
@@ -87,9 +95,7 @@
           "/tmp": "size=512m"
         },
         "shmSize": 2147483648,
-        "env": [
-          "ENABLE_VIDEO=true"
-        ]
+        "env": ["ENABLE_VIDEO=true"]
       },
       "153.0-min": {
         "image": "qaguru/webdriver-firefox:153-min",
@@ -99,9 +105,7 @@
           "/tmp": "size=512m"
         },
         "shmSize": 2147483648,
-        "env": [
-          "ENABLE_VIDEO=true"
-        ]
+        "env": ["ENABLE_VIDEO=true"]
       }
     }
   },
@@ -116,9 +120,7 @@
           "/tmp": "size=512m"
         },
         "shmSize": 2147483648,
-        "env": [
-          "ENABLE_VIDEO=true"
-        ]
+        "env": ["ENABLE_VIDEO=true"]
       },
       "151.0-min": {
         "image": "qaguru/webdriver-msedge:151-min",
@@ -128,9 +130,7 @@
           "/tmp": "size=512m"
         },
         "shmSize": 2147483648,
-        "env": [
-          "ENABLE_VIDEO=true"
-        ]
+        "env": ["ENABLE_VIDEO=true"]
       },
       "150.0": {
         "image": "qaguru/webdriver-msedge:150",
@@ -140,9 +140,7 @@
           "/tmp": "size=512m"
         },
         "shmSize": 2147483648,
-        "env": [
-          "ENABLE_VIDEO=true"
-        ]
+        "env": ["ENABLE_VIDEO=true"]
       },
       "150.0-min": {
         "image": "qaguru/webdriver-msedge:150-min",
@@ -152,9 +150,7 @@
           "/tmp": "size=512m"
         },
         "shmSize": 2147483648,
-        "env": [
-          "ENABLE_VIDEO=true"
-        ]
+        "env": ["ENABLE_VIDEO=true"]
       }
     }
   },
@@ -430,9 +426,7 @@
         "shmSize": 2147483648,
         "mem": "6g",
         "cpu": "4.0",
-        "env": [
-          "SCREEN_RESOLUTION=2100x2100x24"
-        ]
+        "env": ["SCREEN_RESOLUTION=2100x2100x24"]
       },
       "11.0": {
         "image": "qaguru/android:11",
@@ -441,9 +435,7 @@
         "shmSize": 2147483648,
         "mem": "6g",
         "cpu": "4.0",
-        "env": [
-          "SCREEN_RESOLUTION=2100x2100x24"
-        ]
+        "env": ["SCREEN_RESOLUTION=2100x2100x24"]
       },
       "12.0": {
         "image": "qaguru/android:12",
@@ -452,9 +444,7 @@
         "shmSize": 2147483648,
         "mem": "6g",
         "cpu": "4.0",
-        "env": [
-          "SCREEN_RESOLUTION=2100x2100x24"
-        ]
+        "env": ["SCREEN_RESOLUTION=2100x2100x24"]
       },
       "13.0": {
         "image": "qaguru/android:13",
@@ -463,9 +453,7 @@
         "shmSize": 2147483648,
         "mem": "6g",
         "cpu": "4.0",
-        "env": [
-          "SCREEN_RESOLUTION=2100x2100x24"
-        ]
+        "env": ["SCREEN_RESOLUTION=2100x2100x24"]
       },
       "14.0": {
         "image": "qaguru/android:14",
@@ -474,9 +462,7 @@
         "shmSize": 2147483648,
         "mem": "6g",
         "cpu": "4.0",
-        "env": [
-          "SCREEN_RESOLUTION=2100x2100x24"
-        ]
+        "env": ["SCREEN_RESOLUTION=2100x2100x24"]
       },
       "15.0": {
         "image": "qaguru/android:15",
@@ -485,9 +471,7 @@
         "shmSize": 2147483648,
         "mem": "6g",
         "cpu": "4.0",
-        "env": [
-          "SCREEN_RESOLUTION=2100x2100x24"
-        ]
+        "env": ["SCREEN_RESOLUTION=2100x2100x24"]
       },
       "16.0": {
         "image": "qaguru/android:16",
@@ -496,9 +480,7 @@
         "shmSize": 2147483648,
         "mem": "6g",
         "cpu": "4.0",
-        "env": [
-          "SCREEN_RESOLUTION=2100x2100x24"
-        ]
+        "env": ["SCREEN_RESOLUTION=2100x2100x24"]
       }
     }
   }
