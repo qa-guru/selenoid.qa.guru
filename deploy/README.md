@@ -30,7 +30,7 @@
 | Hub version | `https://selenoid.qa.guru/wd/hub/status` (auth) → `Selenoid v3.0.15 built at …` |
 | Video | `https://selenoid.qa.guru/video/` |
 
-Текущие pin’ы `deploy.sh`: hub **v3.0.15**, UI **v3.0.54**, cm **v3.0.4**, video-recorder **`qaguru/video-recorder:latest`**. Warm **4/4** / hot **8/8** on box1 orchestrator. См. [hub v3.0.15](https://github.com/qa-guru/selenoid/releases/tag/v3.0.15) · [UI v3.0.54](https://github.com/qa-guru/selenoid-ui/releases/tag/v3.0.54) · [cm v3.0.4](https://github.com/qa-guru/cm/releases/tag/v3.0.4). Каталог браузеров — **не** этот пин: watch [qa-guru/browser-image](https://github.com/qa-guru/browser-image) → copy + `docker pull` + **SIGHUP** хабу.
+Текущие pin’ы `deploy.sh`: hub **v3.0.15**, UI **v3.0.54**, cm **v3.0.5**, video-recorder **`qaguru/video-recorder:latest`**. Warm **4/4** / hot **8/8** on box1 orchestrator. См. [hub v3.0.15](https://github.com/qa-guru/selenoid/releases/tag/v3.0.15) · [UI v3.0.54](https://github.com/qa-guru/selenoid-ui/releases/tag/v3.0.54) · [cm v3.0.5](https://github.com/qa-guru/cm/releases/tag/v3.0.5). Каталог браузеров — **не** этот пин: watch [qa-guru/browser-image](https://github.com/qa-guru/browser-image) → copy + `docker pull` + **SIGHUP** хабу.
 
 Пустой `version` / `ui_version` в dispatch **не** подставляют старый пин: omitted side берётся с живого [selenoid.qa.guru](https://selenoid.qa.guru) (`/hub/ping`, `/ui/status`). Оба пустые на `repository_dispatch` — каталог (browsers-only).
 
@@ -140,10 +140,10 @@ BROWSERS_ONLY=1 PULL_BROWSERS=always \
 ./deploy/deploy.sh
 ```
 
-Pin версии (опционально; default hub **v3.0.15**, UI **v3.0.54**, cm **v3.0.4**):
+Pin версии (опционально; default hub **v3.0.15**, UI **v3.0.54**, cm **v3.0.5**):
 
 ```bash
-SELENOID_VERSION=v3.0.15 SELENOID_UI_VERSION=v3.0.54 CM_VERSION=v3.0.4 ./deploy/deploy.sh
+SELENOID_VERSION=v3.0.15 SELENOID_UI_VERSION=v3.0.54 CM_VERSION=v3.0.5 ./deploy/deploy.sh
 ```
 
 ### Проверка
