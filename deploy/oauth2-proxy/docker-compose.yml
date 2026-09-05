@@ -1,0 +1,47 @@
+# oauth2-proxy — class B edge for selenoid.qa.guru (P3).
+# Loopback only. Cookie is host-only (no .qa.guru parent). Prometheus stays loopback
+# on Box2 — this compose is not a second vhost.
+#
+# Secrets: /etc/oauth2-proxy/oauth2-proxy.env (root 600). Htpasswd break-glass is a
+# different file from /etc/nginx/selenoid.htpasswd (students / CI / guest).
+
+services:
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.2
+    restart: unless-stopped
+    command:
+      - --http-address=0.0.0.0:4180
+      - --metrics-address=0.0.0.0:44180
+      - --provider=oidc
+      - --oidc-issuer-url=https://auth.qa.guru/realms/qaguru
+      - --client-id=oauth2-proxy
+      - --redirect-url=https://selenoid.qa.guru/oauth2/callback
+      - --upstream=static://202
+      - --reverse-proxy=true
+      - --set-xauthrequest=true
+      - --pass-access-token=false
+      - --pass-authorization-header=false
+      - --skip-jwt-bearer-tokens=true
+      - --email-domain=*
+      - --allowed-group=/staff
+      - --oidc-groups-claim=groups
+      - --scope=openid email profile
+      - --insecure-oidc-allow-unverified-email=true
+      - --cookie-secure=true
+      - --cookie-httponly=true
+      - --cookie-samesite=lax
+      - --cookie-name=_oauth2_selenoid
+      - --session-cookie-minimal=true
+      - --whitelist-domain=selenoid.qa.guru
+      - --htpasswd-file=/etc/oauth2-proxy/htpasswd
+      - --display-htpasswd-form=true
+      - --htpasswd-user-group=/staff
+      - --provider-display-name=QA Guru
+      - --code-challenge-method=S256
+    ports:
+      - "127.0.0.1:4180:4180"
+      - "127.0.0.1:44180:44180"
+    env_file:
+      - /etc/oauth2-proxy/oauth2-proxy.env
+    volumes:
+      - /etc/oauth2-proxy/htpasswd:/etc/oauth2-proxy/htpasswd:ro

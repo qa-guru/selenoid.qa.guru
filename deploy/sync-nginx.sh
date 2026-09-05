@@ -106,6 +106,13 @@ if command -v certbot >/dev/null 2>&1; then
   certbot renew --quiet 2>/dev/null || true
 fi
 
+if grep -q 'auth_request /oauth2/auth' "$TMP"; then
+  if ! curl -sf --max-time 3 http://127.0.0.1:4180/ping >/dev/null; then
+    echo "oauth2-proxy not healthy on 127.0.0.1:4180 — refusing nginx reload that would lock the UI" >&2
+    exit 1
+  fi
+fi
+
 cp "$TMP" "$SITE_PATH"
 ln -sf "$SITE_PATH" "/etc/nginx/sites-enabled/${SITE_NAME}"
 nginx -t

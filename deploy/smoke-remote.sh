@@ -151,12 +151,12 @@ if jq -e 'has("accessKey") or has("playwrightAccessKey")' <<<"$ui_status_json" >
 fi
 echo "OK  /ui/status has no accessKey field (hubAuth build-time)"
 
-echo "=== GET $BASE_URL/ (UI, no auth) ==="
+echo "=== GET $BASE_URL/ (UI, no auth) — OIDC staff, not public ==="
 ui_code="$(curl_http_code "$BASE_URL/")"
-if [[ "$ui_code" == "200" ]]; then
-  echo "OK  UI is public (HTTP 200)"
+if [[ "$ui_code" == "302" || "$ui_code" == "401" ]]; then
+  echo "OK  UI requires OIDC (HTTP $ui_code)"
 else
-  echo "FAIL UI should be public without credentials (HTTP $ui_code)" >&2
+  echo "FAIL UI should redirect to oauth2-proxy/OIDC without credentials (HTTP $ui_code)" >&2
   exit 1
 fi
 
@@ -250,13 +250,12 @@ for key in "$STUDENT_ACCESS_KEY" "$PUBLIC_ACCESS_KEY"; do
   fi
 done
 
-echo "=== GET $BASE_URL/har/?json (expect 200 — HAR listing enabled) ==="
-har_list="$(curl -sSL "$BASE_URL/har/?json" 2>/dev/null || true)"
-if echo "$har_list" | jq -e '.total != null and (.videos | type == "array")' >/dev/null 2>&1; then
-  echo "OK  /har/?json listing enabled (total=$(echo "$har_list" | jq -r .total))"
+echo "=== GET $BASE_URL/har/?json without auth (expect 302/401 — same edge as UI) ==="
+har_code="$(curl_http_code "$BASE_URL/har/?json")"
+if [[ "$har_code" == "302" || "$har_code" == "401" ]]; then
+  echo "OK  /har/?json is not public (HTTP $har_code)"
 else
-  echo "FAIL /har/?json should list HAR files (got: ${har_list:0:160})" >&2
-  echo "     (hub needs -har-output-dir in selenoid-hub.service / deploy.sh)" >&2
+  echo "FAIL /har/?json should require OIDC like the UI (HTTP $har_code)" >&2
   exit 1
 fi
 

@@ -114,4 +114,9 @@ jobs:
               echo "FAIL: ${BASE_URL}/vnc/unknown-session with auth want HTTP 400, got ${vnc_code}" >&2
               exit 1
             fi
-            echo "OK: nginx reload smoke passed (/status, /logs/, /wd/hub, /error, /vnc/)"
+            ui_code="$(curl -sS --http1.1 -o /dev/null -w '%{http_code}' "${BASE_URL}/")"
+            if [[ "$ui_code" != "302" && "$ui_code" != "401" ]]; then
+              echo "FAIL: ${BASE_URL}/ without auth want HTTP 302/401 (OIDC), got ${ui_code}" >&2
+              exit 1
+            fi
+            echo "OK: nginx reload smoke passed (/status, /logs/, /wd/hub, /error, /vnc/, UI OIDC)"
