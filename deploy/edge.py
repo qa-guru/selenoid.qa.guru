@@ -4,6 +4,11 @@
 Prometheus stays loopback on Box2 (decision of this window). Secrets stay in
 ~/.config (mode 600). Nothing here is printed.
 
+P3b (UX pass): Keycloak is the only login page. oauth2-proxy renders nothing —
+its sign-in page is skipped and the break-glass form is hidden, so break-glass
+runs on the Authorization: Basic header only. Non-staff get a written page
+instead of the built-in nginx 403.
+
   python3 deploy/edge.py inventory
   python3 deploy/edge.py ensure-idp-client
   python3 deploy/edge.py install-proxy
@@ -52,6 +57,9 @@ INV_DIR = Path.home() / ".config/selenoid/p3-inventory"
 DEPLOY_DIR = Path(__file__).resolve().parent
 NGINX_SRC = DEPLOY_DIR / "nginx-selenoid.conf"
 COMPOSE_SRC = DEPLOY_DIR / "oauth2-proxy" / "docker-compose.yml"
+FORBIDDEN_SRC = DEPLOY_DIR / "oauth2-proxy" / "403.html"
+FORBIDDEN_DIR = "/var/www/selenoid-auth"
+FORBIDDEN_MARKER = "Доступ только для staff"
 STUDENT_HUB = ("user1", "1234")
 BREAKGLASS_USER = "breakglass"
 ALLOWED_GROUP = "/staff"
@@ -216,6 +224,11 @@ def client_payload(secret: str) -> dict[str, Any]:
         "clientAuthenticatorType": "client-secret",
         "redirectUris": [f"{SELENOID_URL}/oauth2/callback"],
         "webOrigins": [SELENOID_URL],
+        # «Войти другим аккаунтом» на странице 403 гасит и сессию Keycloak, иначе
+        # человека молча пускает обратно тем же пользователем и он снова видит 403.
+        # Без id_token_hint (--session-cookie-minimal) Keycloak требует client_id +
+        # зарегистрированный post logout redirect.
+        "attributes": {"post.logout.redirect.uris": f"{SELENOID_URL}/*"},
         "protocolMappers": [GROUPS_MAPPER],
     }
 
@@ -321,6 +334,9 @@ def _put_client(token: str, secret: str) -> str:
         cid = found[0]["id"]
         body = {k: v for k, v in payload.items() if k != "protocolMappers"}
         body["id"] = cid
+        # PUT заменяет attributes целиком, а Keycloak держит там свои дефолты
+        # (backchannel logout и прочее), которых нет в payload. Мержим, не затираем.
+        body["attributes"] = {**(found[0].get("attributes") or {}), **payload["attributes"]}
         kc("PUT", f"/admin/realms/{REALM}/clients/{cid}", token, body)
         mappers = kc("GET", f"/admin/realms/{REALM}/clients/{cid}/protocol-mappers/models", token) or []
         if not any(m.get("name") == "groups" for m in mappers):
@@ -453,14 +469,24 @@ def inject_ssl(live: str, template: str) -> str:
 
 
 def cmd_apply_nginx() -> int:
-    if "auth_request" not in NGINX_SRC.read_text(encoding="utf-8"):
+    source = NGINX_SRC.read_text(encoding="utf-8")
+    if "auth_request" not in source:
         raise SystemExit("nginx source missing auth_request")
+    if "error_page 403 /_auth/403.html" not in source:
+        raise SystemExit("nginx source missing the staff-only 403 page")
     live = ssh(BOX1, "sudo cat /etc/nginx/sites-available/selenoid")
-    conf = inject_ssl(live, steal_public_map(live, NGINX_SRC.read_text(encoding="utf-8")))
+    conf = inject_ssl(live, steal_public_map(live, source))
     stamp = time.strftime("%Y%m%d-%H%M%S")
     local = Path("/tmp/nginx-selenoid.p3")
     local.write_text(conf, encoding="utf-8")
     scp_to(BOX1, local, "/tmp/nginx-selenoid.p3")
+    # Страница едет до конфига: alias на отсутствующий файл превратит 403 в 404.
+    scp_to(BOX1, FORBIDDEN_SRC, "/tmp/selenoid-403.html")
+    ssh(
+        BOX1,
+        f"sudo mkdir -p {FORBIDDEN_DIR} && sudo cp /tmp/selenoid-403.html {FORBIDDEN_DIR}/403.html"
+        f" && sudo chmod 644 {FORBIDDEN_DIR}/403.html",
+    )
     script = f"""
 set -euo pipefail
 if ! curl -sf --max-time 3 http://127.0.0.1:4180/ping >/dev/null; then
@@ -546,7 +572,13 @@ def oidc_login(username: str, password: str) -> dict[str, Any]:
             break
         break
     cookies = {c.name: c.value for c in jar}
-    return {"status": status, "url": url, "cookies": list(cookies), "body_head": re.sub(r"\s+", " ", page)[:240]}
+    return {
+        "status": status,
+        "url": url,
+        "cookies": list(cookies),
+        "staff_only_page": FORBIDDEN_MARKER in page,
+        "body_head": re.sub(r"\s+", " ", page)[:240],
+    }
 
 
 def cmd_login_check() -> int:
@@ -561,8 +593,23 @@ def cmd_login_check() -> int:
     student = oidc_login(student_user, student_pass)
     staff_ok = staff["status"] == 200
     student_blocked = student["status"] in {403, 401} or "forbidden" in student["body_head"].lower() or "not authorized" in student["body_head"].lower()
-    print(json.dumps({"staff": {"user": staff_user, "status": staff["status"], "ok": staff_ok}, "student": {"user": student_user, "status": student["status"], "blocked": student_blocked}}, indent=2))
-    if not staff_ok or not student_blocked:
+    # Студент должен упереться в нашу страницу, а не во встроенный 403 nginx.
+    student_page_ok = bool(student["staff_only_page"])
+    print(
+        json.dumps(
+            {
+                "staff": {"user": staff_user, "status": staff["status"], "ok": staff_ok},
+                "student": {
+                    "user": student_user,
+                    "status": student["status"],
+                    "blocked": student_blocked,
+                    "staff_only_page": student_page_ok,
+                },
+            },
+            indent=2,
+        )
+    )
+    if not staff_ok or not student_blocked or not student_page_ok:
         raise SystemExit("login-check failed")
     return 0
 
@@ -580,6 +627,12 @@ def cmd_verify() -> int:
 
     ui, ui_h = http_status(f"{SELENOID_URL}/")
     check("UI anonymous redirects to OIDC", ui in {302, 401, 403}, f"{ui} {ui_h.get('location', '')[:80]}")
+    check("anonymous lands on /oauth2/start", "/oauth2/start" in ui_h.get("location", ""), ui_h.get("location", "")[:80])
+    signin, signin_h = http_status(f"{SELENOID_URL}/oauth2/sign_in?rd=%2F")
+    signin_loc = signin_h.get("location", "")
+    check("no oauth2-proxy sign-in page", signin == 302 and signin_loc.startswith(AUTH_URL), f"{signin} {signin_loc[:60]}")
+    page = ssh(BOX1, f"sudo test -s {FORBIDDEN_DIR}/403.html && echo yes || echo no").strip()
+    check("staff-only 403 page deployed", page == "yes", page)
     hub_anon, hub_h = http_status(f"{SELENOID_URL}/wd/hub/status")
     check("/wd/hub anonymous 401", hub_anon == 401, str(hub_anon))
     check("/wd/hub WWW-Authenticate Basic", "basic" in hub_h.get("www-authenticate", "").lower(), hub_h.get("www-authenticate", ""))

@@ -1,9 +1,14 @@
-# oauth2-proxy — class B edge for selenoid.qa.guru (P3).
+# oauth2-proxy — class B edge for selenoid.qa.guru (P3, UX pass P3b).
 # Loopback only. Cookie is host-only (no .qa.guru parent). Prometheus stays loopback
 # on Box2 — this compose is not a second vhost.
 #
 # Secrets: /etc/oauth2-proxy/oauth2-proxy.env (root 600). Htpasswd break-glass is a
 # different file from /etc/nginx/selenoid.htpasswd (students / CI / guest).
+#
+# P3b: Keycloak is the only login page a human ever sees. The proxy renders nothing —
+# --skip-provider-button sends /oauth2/sign_in straight to the IdP, and the break-glass
+# htpasswd form is hidden. Break-glass still works: the htpasswd session loader accepts
+# an Authorization: Basic header regardless of the form, which is what edge.py tests.
 
 services:
   oauth2-proxy:
@@ -33,10 +38,13 @@ services:
       - --cookie-name=_oauth2_selenoid
       - --session-cookie-minimal=true
       - --whitelist-domain=selenoid.qa.guru
+      - --whitelist-domain=auth.qa.guru
+      - --skip-provider-button=true
       - --htpasswd-file=/etc/oauth2-proxy/htpasswd
-      - --display-htpasswd-form=true
+      - --display-htpasswd-form=false
       - --htpasswd-user-group=/staff
       - --provider-display-name=QA Guru
+      - --footer=-
       - --code-challenge-method=S256
     ports:
       - "127.0.0.1:4180:4180"
