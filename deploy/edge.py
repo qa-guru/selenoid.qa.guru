@@ -474,6 +474,8 @@ def cmd_apply_nginx() -> int:
         raise SystemExit("nginx source missing auth_request")
     if "error_page 403 /_auth/403.html" not in source:
         raise SystemExit("nginx source missing the staff-only 403 page")
+    if "proxy_intercept_errors on" not in source:
+        raise SystemExit("nginx source missing intercept on /oauth2/ — callback 403 would stay the proxy page")
     live = ssh(BOX1, "sudo cat /etc/nginx/sites-available/selenoid")
     conf = inject_ssl(live, steal_public_map(live, source))
     stamp = time.strftime("%Y%m%d-%H%M%S")
@@ -583,7 +585,7 @@ def oidc_login(username: str, password: str) -> dict[str, Any]:
 
 def cmd_login_check() -> int:
     pilot = load_kv(PILOT_ENV_FILE)
-    staff_user = pilot.get("PILOT_STAFF_USERNAME", "svasenkov")
+    staff_user = pilot.get("PILOT_STAFF_USERNAME", "staff-pilot")
     staff_pass = pilot.get("PILOT_STAFF_PASSWORD")
     student_user = pilot.get("PILOT_STUDENT_USERNAME", "student-pilot")
     student_pass = pilot.get("PILOT_STUDENT_PASSWORD")
