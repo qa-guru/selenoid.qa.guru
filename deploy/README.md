@@ -4,7 +4,7 @@
 
 | Путь | Как подключаться |
 |------|------------------|
-| `/` (UI) | `https://selenoid.qa.guru` — OIDC `staff` (P3), не public |
+| `/` (UI) | `https://selenoid.qa.guru` — публичный, guest hubAuth; другую учётку на new-session вручную |
 | `/wd/hub` | `https://selenoid.qa.guru/wd/hub` |
 | `/playwright/` | Create Session в UI или `wss://selenoid.qa.guru/playwright/playwright-chromium/1.62.1?accessKey=<user>%3A<password>&enableVNC=true&enableVideo=true` |
 | `/status` | UI-shaped JSON (`.state`, `.version` = **selenoid-ui** stamp) |
@@ -21,7 +21,7 @@
 | Selenium | `https://selenoid.qa.guru/wd/hub` |
 | Playwright (public) | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.62.1?accessKey=<SELENOID_PUBLIC_USER>%3A<SELENOID_PUBLIC_PASSWORD>&enableVNC=true&enableVideo=true` |
 | Playwright (students) | `wss://selenoid.qa.guru/playwright/playwright-chromium/1.62.1?accessKey=user1:1234&enableVNC=true&enableVideo=true` |
-| UI | `https://selenoid.qa.guru/` — OIDC, группа `/staff` |
+| UI | `https://selenoid.qa.guru/` — публичный (guest в пропертях UI) |
 | Status (UI) | `https://selenoid.qa.guru/status` — `.version` = UI, не hub |
 | Hub status | `https://selenoid.qa.guru/hub/status` |
 | Hub logs | `https://selenoid.qa.guru/logs/{sessionId}` (auth; WebSocket) |

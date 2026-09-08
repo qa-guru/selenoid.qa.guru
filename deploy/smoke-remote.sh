@@ -151,14 +151,23 @@ if jq -e 'has("accessKey") or has("playwrightAccessKey")' <<<"$ui_status_json" >
 fi
 echo "OK  /ui/status has no accessKey field (hubAuth build-time)"
 
-echo "=== GET $BASE_URL/ (UI, no auth) — OIDC staff, not public ==="
+echo "=== GET $BASE_URL/ (UI, no auth) — public, no IdP redirect ==="
 ui_code="$(curl_http_code "$BASE_URL/")"
-if [[ "$ui_code" == "302" || "$ui_code" == "401" ]]; then
-  echo "OK  UI requires OIDC (HTTP $ui_code)"
-else
-  echo "FAIL UI should redirect to oauth2-proxy/OIDC without credentials (HTTP $ui_code)" >&2
+ui_loc="$(curl -sS -o /dev/null -D - --max-time 15 "$BASE_URL/" | awk 'tolower($1)=="location:"{print $2; exit}' | tr -d '\r')"
+ui_head="$(curl -sS --max-time 15 "$BASE_URL/" | head -c 8000)"
+if [[ "$ui_code" != "200" ]]; then
+  echo "FAIL UI should be public for anonymous (HTTP $ui_code)" >&2
   exit 1
 fi
+if [[ "$ui_loc" == *auth.qa.guru* || "$ui_loc" == *oauth2* ]]; then
+  echo "FAIL UI redirected to IdP/oauth2 ($ui_loc)" >&2
+  exit 1
+fi
+if grep -q 'kc-form-login' <<<"$ui_head"; then
+  echo "FAIL UI served Keycloak login, not Selenoid" >&2
+  exit 1
+fi
+echo "OK  UI public (HTTP $ui_code, no IdP redirect)"
 
 echo "=== GET $BASE_URL/wd/hub/status without auth (expect 401) ==="
 wd_no_auth="$(curl_http_code "$BASE_URL/wd/hub/status")"

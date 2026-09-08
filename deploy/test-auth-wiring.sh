@@ -47,7 +47,7 @@ if ./deploy/smoke-remote.sh 2>/dev/null; then
 fi
 echo "OK  smoke-remote rejects missing URL"
 
-echo "=== UI uses auth_request; /wd/hub keeps auth_basic (Selenium WWW-Authenticate) ==="
+echo "=== UI is public; /wd/hub keeps auth_basic (Selenium WWW-Authenticate) ==="
 python - <<'PY'
 from pathlib import Path
 text = Path("deploy/nginx-selenoid.conf").read_text(encoding="utf-8")
@@ -58,12 +58,12 @@ if "auth_request" in hub:
     raise SystemExit("FAIL: auth_request on /wd/hub strips WWW-Authenticate and breaks Selenium")
 if 'auth_basic "Selenoid";' not in hub:
     raise SystemExit("FAIL: /wd/hub must use auth_basic so clients see WWW-Authenticate")
-ui = text.split("location / {", 1)[1].split("location ", 1)[0]
-if "auth_request /oauth2/auth" not in ui:
-    raise SystemExit("FAIL: location / must auth_request oauth2-proxy")
-if "auth_request /oauth2/auth" not in text:
-    raise SystemExit("FAIL: missing oauth2-proxy auth_request")
-print("OK  UI auth_request; /wd/hub auth_basic with WWW-Authenticate")
+ui = text.split("location / {", 1)[1].split("server {", 1)[0]
+if "auth_request" in ui or "/oauth2/" in ui:
+    raise SystemExit("FAIL: location / must not use oauth2-proxy / auth_request")
+if "auth_basic off" not in ui:
+    raise SystemExit("FAIL: location / must be public (auth_basic off)")
+print("OK  UI public; /wd/hub auth_basic with WWW-Authenticate")
 PY
 
 echo "=== tracked repo: no legacy public password literal ==="
