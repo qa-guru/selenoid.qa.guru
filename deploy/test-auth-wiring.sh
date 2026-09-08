@@ -47,6 +47,24 @@ if ./deploy/smoke-remote.sh 2>/dev/null; then
 fi
 echo "OK  smoke-remote rejects missing URL"
 
+echo "=== edge.py ssl_ctx pins TLS 1.2+ ==="
+python - <<'PY'
+import importlib.util
+import ssl
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("edge", Path("deploy/edge.py"))
+mod = importlib.util.module_from_spec(spec)
+assert spec.loader is not None
+spec.loader.exec_module(mod)
+ctx = mod.ssl_ctx()
+if ctx.minimum_version < ssl.TLSVersion.TLSv1_2:
+    raise SystemExit(f"FAIL: ssl_ctx minimum_version={ctx.minimum_version}")
+if ctx.verify_mode != ssl.CERT_REQUIRED:
+    raise SystemExit(f"FAIL: ssl_ctx verify_mode={ctx.verify_mode}")
+print("OK  TLS 1.2+ and CERT_REQUIRED")
+PY
+
 echo "=== UI is public; /wd/hub keeps auth_basic (Selenium WWW-Authenticate) ==="
 python - <<'PY'
 from pathlib import Path

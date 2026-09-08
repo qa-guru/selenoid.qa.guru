@@ -15,9 +15,11 @@ import base64
 import json
 import os
 import re
+import shlex
 import ssl
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -39,9 +41,10 @@ FORBIDDEN_DIR = "/var/www/selenoid-auth"
 
 
 def ssl_ctx() -> ssl.SSLContext:
-    if certifi is not None:
-        return ssl.create_default_context(cafile=certifi.where())
-    return ssl.create_default_context()
+    cafile = certifi.where() if certifi is not None else None
+    ctx = ssl.create_default_context(cafile=cafile)
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    return ctx
 
 
 def ssh(host: str, script: str, *, stdin: bytes | None = None, check: bool = True) -> str:
@@ -161,13 +164,25 @@ def cmd_apply_nginx() -> int:
     live = ssh(BOX1, "sudo cat /etc/nginx/sites-available/selenoid")
     conf = inject_ssl(live, steal_public_map(live, source))
     stamp = time.strftime("%Y%m%d-%H%M%S")
-    local = Path("/tmp/nginx-selenoid.public-ui")
-    local.write_text(conf, encoding="utf-8")
-    scp_to(BOX1, local, "/tmp/nginx-selenoid.public-ui")
-    script = f"""
+    with tempfile.TemporaryDirectory(prefix="nginx-selenoid.") as td:
+        local = Path(td) / "nginx.conf"
+        local.write_text(conf, encoding="utf-8")
+        os.chmod(local, 0o600)
+        remote_tmp = ssh(BOX1, 'mktemp -p "$HOME" nginx-selenoid.XXXXXX').strip()
+        if (
+            not remote_tmp.startswith("/")
+            or "\n" in remote_tmp
+            or "\r" in remote_tmp
+            or ".." in remote_tmp.split("/")
+        ):
+            raise SystemExit(f"unexpected mktemp path: {remote_tmp!r}")
+        scp_to(BOX1, local, remote_tmp)
+        remote_q = shlex.quote(remote_tmp)
+        script = f"""
 set -euo pipefail
+trap 'rm -f {remote_q}' EXIT
 sudo cp /etc/nginx/sites-available/selenoid /etc/nginx/sites-available/selenoid.bak-public-ui-{stamp}
-sudo cp /tmp/nginx-selenoid.public-ui /etc/nginx/sites-available/selenoid
+sudo cp {remote_q} /etc/nginx/sites-available/selenoid
 if ! sudo nginx -t; then
   sudo cp /etc/nginx/sites-available/selenoid.bak-public-ui-{stamp} /etc/nginx/sites-available/selenoid
   sudo nginx -t
@@ -177,7 +192,7 @@ fi
 sudo systemctl reload nginx
 echo OK
 """
-    out = ssh(BOX1, script).strip()
+        out = ssh(BOX1, script).strip()
     print(json.dumps({"ok": True, "backup": f"selenoid.bak-public-ui-{stamp}", "reload": out}, indent=2))
     return 0
 
@@ -221,7 +236,9 @@ def cmd_verify() -> int:
     check("/ui/status public", ui_st == 200, str(ui_st))
     listen = ssh(BOX2, "ss -lntp | grep '127.0.0.1:9091' || true")
     check("Prometheus loopback :9091", "127.0.0.1:9091" in listen, listen.strip()[:80])
-    pub, _ = http_status("http://89.248.193.83:9091/-/healthy")
+    # Prometheus speaks HTTP; a 2xx here means :9091 leaked past the firewall.
+    prometheus_public = os.environ.get("PROMETHEUS_PUBLIC_IP", "89.248.193.83")
+    pub, _ = http_status(f"http://{prometheus_public}:9091/-/healthy")  # NOSONAR python:S5332
     check("Prometheus not on the internet", pub == 0, str(pub))
     ping = ssh(BOX1, "curl -sf -o /dev/null -w '%{http_code}' --max-time 2 http://127.0.0.1:4180/ping || echo 000").strip()
     check("oauth2-proxy gone", ping != "200", ping)
