@@ -71,6 +71,15 @@ EOF
 chmod 440 "$HUB_SUDOERS"
 visudo -cf "$HUB_SUDOERS"
 
+echo "=== passwordless sudo to restore browsers.json owner (catalog copy) ==="
+CATALOG_SUDOERS="/etc/sudoers.d/${DEPLOY_USER}-browsers-json"
+cat >"$CATALOG_SUDOERS" <<EOF
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/chown ${DEPLOY_USER}\:${DEPLOY_USER} /opt/selenoid/browsers.json
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/chmod 644 /opt/selenoid/browsers.json
+EOF
+chmod 440 "$CATALOG_SUDOERS"
+visudo -cf "$CATALOG_SUDOERS"
+
 if [[ -f "$SCRIPT_DIR/selenoid-hub.service" ]]; then
   echo "=== install + enable systemd unit selenoid-hub.service (autostart on reboot) ==="
   install -m 644 "$SCRIPT_DIR/selenoid-hub.service" /etc/systemd/system/selenoid-hub.service

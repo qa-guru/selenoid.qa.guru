@@ -130,7 +130,8 @@ apply_production_browsers_json() {
   fi
 }
 
-# GHA deploy user cannot sudo-chown. If catalog is root-owned, abort BEFORE stop.
+# GHA deploy user cannot sudo-chown unless sudoers allows it.
+# If catalog is root-owned, restore owner BEFORE stop — otherwise hub/UI stay down.
 assert_catalog_writable() {
   local dest="${CONFIG_DIR}/browsers.json"
   local prod="${BROWSERS_PRODUCTION:-/tmp/browsers-production.json}"
@@ -138,8 +139,13 @@ assert_catalog_writable() {
     return 0
   fi
   if [[ -e "$dest" && ! -w "$dest" ]]; then
-    echo "FAIL: $dest is not writable by $(id -un) (owner=$(stat -c '%U:%G' "$dest" 2>/dev/null || echo '?')). Aborting before stop — otherwise hub/UI stay down. Ops: sudo chown selenoid:selenoid $dest && sudo chmod 644 $dest" >&2
-    exit 1
+    echo "WARN: $dest is not writable by $(id -un) (owner=$(stat -c '%U:%G' "$dest" 2>/dev/null || echo '?')) — trying sudo chown"
+    if sudo -n chown selenoid:selenoid "$dest" && sudo -n chmod 644 "$dest"; then
+      echo "OK  restored $dest owner to selenoid:selenoid"
+    else
+      echo "FAIL: cannot make $dest writable. Aborting before stop. Ops: sudo chown selenoid:selenoid $dest && sudo chmod 644 $dest" >&2
+      exit 1
+    fi
   fi
 }
 

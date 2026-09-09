@@ -27,10 +27,10 @@
 | Hub logs | `https://selenoid.qa.guru/logs/{sessionId}` (auth; WebSocket) |
 | Hub error | `https://selenoid.qa.guru/error` (auth; invalid session JSON) |
 | Hub VNC | `https://selenoid.qa.guru/vnc/{sessionId}` (auth; WebSocket) |
-| Hub version | `https://selenoid.qa.guru/wd/hub/status` (auth) → `Selenoid v3.0.15 built at …` |
+| Hub version | `https://selenoid.qa.guru/wd/hub/status` (auth) → `Selenoid v3.0.16 built at …` |
 | Video | `https://selenoid.qa.guru/video/` |
 
-Текущие pin’ы `deploy.sh`: hub **v3.0.15**, UI **v3.0.54**, cm **v3.0.5**, video-recorder **`qaguru/video-recorder:latest`**. Warm **4/4** / hot **8/8** on box1 orchestrator. См. [hub v3.0.15](https://github.com/qa-guru/selenoid/releases/tag/v3.0.15) · [UI v3.0.54](https://github.com/qa-guru/selenoid-ui/releases/tag/v3.0.54) · [cm v3.0.5](https://github.com/qa-guru/cm/releases/tag/v3.0.5). Каталог браузеров — **не** этот пин: watch [qa-guru/browser-image](https://github.com/qa-guru/browser-image) → copy + `docker pull` + **SIGHUP** хабу.
+Текущие pin’ы `deploy.sh`: hub **v3.0.16**, UI **v3.0.58**, cm **v3.0.5**, video-recorder **`qaguru/video-recorder:latest`**. Warm **4/4** / hot **8/8** on box1 orchestrator. См. [hub v3.0.16](https://github.com/qa-guru/selenoid/releases/tag/v3.0.16) · [UI v3.0.58](https://github.com/qa-guru/selenoid-ui/releases/tag/v3.0.58) · [cm v3.0.5](https://github.com/qa-guru/cm/releases/tag/v3.0.5). Каталог браузеров — **не** этот пин: watch [qa-guru/browser-image](https://github.com/qa-guru/browser-image) → copy + `docker pull` + **SIGHUP** хабу.
 
 Пустой `version` / `ui_version` в dispatch **не** подставляют старый пин: omitted side берётся с живого [selenoid.qa.guru](https://selenoid.qa.guru) (`/hub/ping`, `/ui/status`). Оба пустые на `repository_dispatch` — каталог (browsers-only).
 
@@ -72,7 +72,7 @@ Workflow [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) в [q
 | `push` `deploy/browsers-production.json` | **Каталог** — copy + `docker pull` + SIGHUP хабу. Hub/UI не гасятся. Watch кладёт этот файл последним |
 | `repository_dispatch: deploy-selenoid` без `version` и `ui_version` | Тоже каталог (патч того же тега: `pull-prod` / `promote-prod`) |
 | `repository_dispatch: deploy-selenoid` **с** `version` / `ui_version` | Релиз hub/UI — полный `deploy.sh` (stop/start) |
-| `workflow_dispatch` | Ручной **полный** деплой стека (пустая сторона = live pin, fallback hub **v3.0.15** / UI **v3.0.54**) |
+| `workflow_dispatch` | Ручной **полный** деплой стека (пустая сторона = live pin, fallback hub **v3.0.16** / UI **v3.0.58**) |
 
 **Prod Go smoke owner:** этот workflow (`deploy-smoke` → `api,smoke`, callback 35m).  
 `selenoid` / `selenoid-ui` release после `deploy-prod-dispatch` только ждут pin (`wait_only`) — второй `deploy-smoke` не шлют (иначе дубль под `prod-smoke-gate`).
