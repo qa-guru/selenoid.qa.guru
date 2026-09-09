@@ -259,12 +259,14 @@ for key in "$STUDENT_ACCESS_KEY" "$PUBLIC_ACCESS_KEY"; do
   fi
 done
 
-echo "=== GET $BASE_URL/har/?json without auth (expect 302/401 — same edge as UI) ==="
+echo "=== GET $BASE_URL/har/?json without auth (same edge as public UI) ==="
 har_code="$(curl_http_code "$BASE_URL/har/?json")"
-if [[ "$har_code" == "302" || "$har_code" == "401" ]]; then
-  echo "OK  /har/?json is not public (HTTP $har_code)"
+if [[ "$har_code" == "200" ]]; then
+  echo "OK  /har/?json public like UI (HTTP $har_code)"
+elif [[ "$har_code" == "302" || "$har_code" == "401" ]]; then
+  echo "OK  /har/?json gated (HTTP $har_code)"
 else
-  echo "FAIL /har/?json should require OIDC like the UI (HTTP $har_code)" >&2
+  echo "FAIL /har/?json unexpected HTTP $har_code (want 200 public or 302/401 gated)" >&2
   exit 1
 fi
 
