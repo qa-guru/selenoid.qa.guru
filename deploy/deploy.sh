@@ -6,8 +6,8 @@ set -euo pipefail
 CONFIG_DIR="${SELENOID_CONFIG_DIR:-/opt/selenoid}"
 CM_BIN="${CM_BIN:-$HOME/cm}"
 CM_URL="${CM_URL:-https://github.com/qa-guru/cm/releases/latest/download/cm_linux_amd64}"
-VERSION="${SELENOID_VERSION:-v3.0.15}"
-UI_VERSION="${SELENOID_UI_VERSION:-v3.0.54}"
+VERSION="${SELENOID_VERSION:-v3.0.16}"
+UI_VERSION="${SELENOID_UI_VERSION:-v3.0.58}"
 CM_VERSION="${CM_VERSION:-v3.0.5}"
 VIDEO_RECORDER_IMAGE="${VIDEO_RECORDER_IMAGE:-qaguru/video-recorder:latest}"
 # Box1 warm-pool orchestrator (docker-compose.hub.yml → 127.0.0.1:9090).
@@ -118,12 +118,28 @@ apply_production_browsers_json() {
   BROWSERS_PRODUCTION="${BROWSERS_PRODUCTION:-/tmp/browsers-production.json}"
   if [[ -f "$BROWSERS_PRODUCTION" ]]; then
     echo "=== apply production browsers.json ==="
-    cp "$BROWSERS_PRODUCTION" "$CONFIG_DIR/browsers.json"
+    if ! cp "$BROWSERS_PRODUCTION" "$CONFIG_DIR/browsers.json"; then
+      echo "FAIL: cannot copy $BROWSERS_PRODUCTION → $CONFIG_DIR/browsers.json (owner=$(stat -c '%U:%G' "$CONFIG_DIR/browsers.json" 2>/dev/null || echo '?'))" >&2
+      exit 1
+    fi
   elif browsers_only; then
     echo "FAIL: BROWSERS_ONLY requires BROWSERS_PRODUCTION ($BROWSERS_PRODUCTION)" >&2
     exit 1
   else
     "$CM_BIN" selenoid configure -c "$CONFIG_DIR" -f "${version_args[@]}"
+  fi
+}
+
+# GHA deploy user cannot sudo-chown. If catalog is root-owned, abort BEFORE stop.
+assert_catalog_writable() {
+  local dest="${CONFIG_DIR}/browsers.json"
+  local prod="${BROWSERS_PRODUCTION:-/tmp/browsers-production.json}"
+  if [[ ! -f "$prod" ]]; then
+    return 0
+  fi
+  if [[ -e "$dest" && ! -w "$dest" ]]; then
+    echo "FAIL: $dest is not writable by $(id -un) (owner=$(stat -c '%U:%G' "$dest" 2>/dev/null || echo '?')). Aborting before stop — otherwise hub/UI stay down. Ops: sudo chown selenoid:selenoid $dest && sudo chmod 644 $dest" >&2
+    exit 1
   fi
 }
 
@@ -174,6 +190,7 @@ sighup_hub_reload_catalog() {
 
 if browsers_only; then
   echo "=== browsers-only: copy catalog + pull images + SIGHUP hub (no hub/UI stop) ==="
+  assert_catalog_writable
   if ! curl -sf --max-time 5 "http://127.0.0.1:4444/status" >/dev/null; then
     echo "FAIL: hub /status is down — browsers-only cannot start the stack; use a full deploy" >&2
     exit 1
@@ -207,6 +224,8 @@ if browsers_only; then
   pgrep -af "${CONFIG_DIR}/bin/selenoid" || true
   exit 0
 fi
+
+assert_catalog_writable
 
 echo "=== stop legacy containers ==="
 # Never stop pool compose (selenoid-pool / alias selenoid-warm-pool / warm-chrome-*).

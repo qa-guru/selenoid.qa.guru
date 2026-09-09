@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Hub tag (e.g. v3.0.15). Empty = keep live hub (do not rewind)'
+        description: 'Hub tag (e.g. v3.0.16). Empty = keep live hub (do not rewind)'
         required: false
         default: ''
       ui_version:
-        description: 'UI tag (e.g. v3.0.54). Empty = keep live UI (do not rewind)'
+        description: 'UI tag (e.g. v3.0.58). Empty = keep live UI (do not rewind)'
         required: false
         default: ''
       ref:
@@ -86,17 +86,26 @@ jobs:
           set -euo pipefail
           # Fallback only when live probe fails. Never fill an omitted side with a
           # stale pin (hub-only dispatch used to rewind UI to v3.0.52).
-          HUB_PIN="v3.0.15"
-          UI_PIN="v3.0.54"
+          HUB_PIN="v3.0.16"
+          UI_PIN="v3.0.58"
           emptyish() { [[ -z "${1:-}" || "${1}" == "null" ]]; }
           live_hub=""
           live_ui=""
           if live_json="$(curl -fsS --max-time 8 https://selenoid.qa.guru/hub/ping)"; then
             live_hub="$(jq -r '.version // empty' <<<"$live_json")"
+            # /hub/ping used to report HEAD; never treat that as a download tag.
+            if [[ -n "$live_hub" && "$live_hub" != v[0-9]* ]]; then
+              echo "live hub version '$live_hub' is not a release tag — ignoring"
+              live_hub=""
+            fi
           fi
           if live_json="$(curl -fsS --max-time 8 https://selenoid.qa.guru/ui/status)"; then
             raw_ui="$(jq -r '.version // empty' <<<"$live_json")"
             live_ui="${raw_ui%%[*}"
+            if [[ -n "$live_ui" && "$live_ui" != v[0-9]* ]]; then
+              echo "live UI version '$live_ui' is not a release tag — ignoring"
+              live_ui=""
+            fi
           fi
           hub=""
           ui=""
