@@ -333,7 +333,8 @@ def main(argv: list[str] | None = None) -> int:
     server = ThreadingHTTPServer((cfg["bind"], int(cfg["port"])), make_handler(app))
     sys.stderr.write(f"token-validator listen {cfg['bind']}:{cfg['port']} realm={cfg['realm']}\n")
     try:
-        server.serve_forever()
+        # Loopback auth_request only (BIND refuses non-loopback). Not a public HTTP surface.
+        server.serve_forever()  # NOSONAR python:S5332
     except KeyboardInterrupt:
         return 0
     return 0
