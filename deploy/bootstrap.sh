@@ -71,6 +71,20 @@ EOF
 chmod 440 "$HUB_SUDOERS"
 visudo -cf "$HUB_SUDOERS"
 
+echo "=== passwordless sudo for personal-token validator ==="
+TOKEN_SUDOERS="/etc/sudoers.d/${DEPLOY_USER}-selenoid-token-validator"
+cat >"$TOKEN_SUDOERS" <<EOF
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/install -m 644 /tmp/selenoid-token-validator.service /etc/systemd/system/selenoid-token-validator.service
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl enable selenoid-token-validator.service
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl disable selenoid-token-validator.service
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl start selenoid-token-validator.service
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop selenoid-token-validator.service
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart selenoid-token-validator.service
+${DEPLOY_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl status selenoid-token-validator.service
+EOF
+chmod 440 "$TOKEN_SUDOERS"
+visudo -cf "$TOKEN_SUDOERS"
+
 echo "=== passwordless sudo to restore browsers.json owner (catalog copy) ==="
 CATALOG_SUDOERS="/etc/sudoers.d/${DEPLOY_USER}-browsers-json"
 cat >"$CATALOG_SUDOERS" <<EOF

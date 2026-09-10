@@ -1,0 +1,19 @@
+[Unit]
+Description=Selenoid personal-token validator (Keycloak loopback)
+Documentation=https://github.com/qa-guru/selenoid.qa.guru
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=selenoid
+Group=selenoid
+EnvironmentFile=/etc/selenoid/token-validator.env
+ExecStart=/usr/bin/python3 /opt/selenoid/bin/token-validator.py
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

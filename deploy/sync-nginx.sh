@@ -70,6 +70,10 @@ fi
 chmod 640 "$HTPASSWD"
 chown root:www-data "$HTPASSWD" 2>/dev/null || chmod 644 "$HTPASSWD"
 
+CACHE_DIR="${SELENOID_TOKEN_CACHE_DIR:-/var/cache/nginx/selenoid-token}"
+install -d -m 750 "$CACHE_DIR"
+chown www-data:www-data "$CACHE_DIR" 2>/dev/null || true
+
 cp "$CONF_SRC" "$TMP"
 patch_nginx_public_access_keys "$TMP"
 

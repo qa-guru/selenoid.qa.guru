@@ -163,7 +163,7 @@ export SELENOID_PUBLIC_USER=qa_engineer SELENOID_PUBLIC_PASSWORD='…'
 | Порт | `location` | Куда |
 |------|------------|------|
 | 443 | `/` | `127.0.0.1:8080` (UI) |
-| 443 | `/wd/hub` | `127.0.0.1:8080` (UI → hub) |
+| 443 | `/wd/hub` | `127.0.0.1:8080` (UI → hub); `auth_basic` + `auth_request` + `satisfy any` (htpasswd или личный `selenoidToken`) |
 | 443 | `/playwright/` | `127.0.0.1:8080` (UI → hub) |
 | 443 | `/status` | `127.0.0.1:8080` (UI JSON; `.version` = UI stamp) |
 | 443 | `/hub/status` | `127.0.0.1:4444` (raw hub capacity) |
@@ -175,8 +175,9 @@ export SELENOID_PUBLIC_USER=qa_engineer SELENOID_PUBLIC_PASSWORD='…'
 
 Не проксируйте `/wd/hub` и `/playwright/` напрямую на hub:443 — проксируйте через selenoid-ui.
 Не сверяйте версию hub по публичному `/status.version` — это stamp selenoid-ui.
+`/wd/hub` держит `auth_basic` и добавляет `auth_request` на loopback-валидатор (`127.0.0.1:9082`) через `satisfy any`. Без `satisfy any` снимать `auth_basic` нельзя — Selenium потеряет `WWW-Authenticate`. `:4445` и `/playwright/` не трогаем. Кеш ответа валидатора ~30 с (`proxy_cache` на 204).
 
-Справочные файлы: [`nginx-selenoid.conf`](nginx-selenoid.conf), [`sync-nginx.sh`](sync-nginx.sh).
+Справочные файлы: [`nginx-selenoid.conf`](nginx-selenoid.conf), [`sync-nginx.sh`](sync-nginx.sh), [`token-validator.py`](token-validator.py).
 
 Применить вручную (если CI не смог из‑за sudo):
 
