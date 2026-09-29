@@ -35,8 +35,28 @@
     }
   },
   "firefox": {
-    "default": "156.0",
+    "default": "157.0",
     "versions": {
+      "157.0": {
+        "image": "qaguru/webdriver-firefox:157",
+        "port": "4444",
+        "path": "/",
+        "tmpfs": {
+          "/tmp": "size=512m"
+        },
+        "shmSize": 2147483648,
+        "env": ["ENABLE_VIDEO=true"]
+      },
+      "157.0-min": {
+        "image": "qaguru/webdriver-firefox:157-min",
+        "port": "4444",
+        "path": "/",
+        "tmpfs": {
+          "/tmp": "size=512m"
+        },
+        "shmSize": 2147483648,
+        "env": ["ENABLE_VIDEO=true"]
+      },
       "156.0": {
         "image": "qaguru/webdriver-firefox:156",
         "port": "4444",
@@ -49,26 +69,6 @@
       },
       "156.0-min": {
         "image": "qaguru/webdriver-firefox:156-min",
-        "port": "4444",
-        "path": "/",
-        "tmpfs": {
-          "/tmp": "size=512m"
-        },
-        "shmSize": 2147483648,
-        "env": ["ENABLE_VIDEO=true"]
-      },
-      "155.0": {
-        "image": "qaguru/webdriver-firefox:155",
-        "port": "4444",
-        "path": "/",
-        "tmpfs": {
-          "/tmp": "size=512m"
-        },
-        "shmSize": 2147483648,
-        "env": ["ENABLE_VIDEO=true"]
-      },
-      "155.0-min": {
-        "image": "qaguru/webdriver-firefox:155-min",
         "port": "4444",
         "path": "/",
         "tmpfs": {
