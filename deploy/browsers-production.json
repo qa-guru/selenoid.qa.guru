@@ -1,9 +1,9 @@
 {
   "chrome": {
-    "default": "155.0",
+    "default": "156.0",
     "versions": {
-      "155.0": {
-        "image": "qaguru/webdriver-chrome:155",
+      "156.0": {
+        "image": "qaguru/webdriver-chrome:156",
         "port": "4444",
         "path": "/",
         "tmpfs": {
@@ -12,8 +12,8 @@
         "shmSize": 2147483648,
         "env": ["ENABLE_VIDEO=true"]
       },
-      "154.0": {
-        "image": "qaguru/webdriver-chrome:154",
+      "155.0": {
+        "image": "qaguru/webdriver-chrome:155",
         "port": "4444",
         "path": "/",
         "tmpfs": {
