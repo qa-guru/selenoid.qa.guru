@@ -24,9 +24,10 @@
 | UI | `https://selenoid.qa.guru/` — публичный (guest в пропертях UI) |
 | Status (UI) | `https://selenoid.qa.guru/status` — `.version` = UI, не hub |
 | Hub status | `https://selenoid.qa.guru/hub/status` |
-| Hub logs | `https://selenoid.qa.guru/logs/{sessionId}` (auth; WebSocket) |
+| Hub logs | `https://selenoid.qa.guru/logs/{sessionId}` (WebSocket; публично — демо-стенд) |
 | Hub error | `https://selenoid.qa.guru/error` (auth; invalid session JSON) |
-| Hub VNC | `https://selenoid.qa.guru/vnc/{sessionId}` (auth; WebSocket) |
+| Hub VNC | `https://selenoid.qa.guru/vnc/{sessionId}` (WebSocket; публично — демо-стенд) |
+| Hub DevTools CDP | `https://selenoid.qa.guru/devtools/{sessionId}/page` (WebSocket; публично — демо-стенд) |
 | Hub version | `https://selenoid.qa.guru/wd/hub/status` (auth) → `Selenoid v3.0.16 built at …` |
 | Video | `https://selenoid.qa.guru/video/` |
 
@@ -167,9 +168,10 @@ export SELENOID_PUBLIC_USER=qa_engineer SELENOID_PUBLIC_PASSWORD='…'
 | 443 | `/playwright/` | `127.0.0.1:8080` (UI → hub) |
 | 443 | `/status` | `127.0.0.1:8080` (UI JSON; `.version` = UI stamp) |
 | 443 | `/hub/status` | `127.0.0.1:4444` (raw hub capacity) |
-| 443 | `/logs/` | `127.0.0.1:4444` (hub session logs WS; auth; UI → `/ws/logs/`) |
+| 443 | `/logs/` | `127.0.0.1:4444` (hub session logs WS; публично + `te_cors_origin`; UI → `/ws/logs/`) |
 | 443 | `/error` | `127.0.0.1:4444` (hub invalid-session JSON; auth) |
-| 443 | `/vnc/` | `127.0.0.1:4444` (hub VNC WS; auth; UI → `/ws/vnc/`) |
+| 443 | `/vnc/` | `127.0.0.1:4444` (hub VNC WS; публично; UI → `/ws/vnc/`) |
+| 443 | `/devtools/` | `127.0.0.1:4444` (hub DevTools CDP WS; публично + `te_cors_origin`; UI → `/ws/devtools/`) |
 | 443 | `/wd/hub/status` | через UI → hub (auth; версия hub в message) |
 | 4445 | `/` | `127.0.0.1:4444` (hub) — CI |
 
